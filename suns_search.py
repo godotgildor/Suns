@@ -190,7 +190,7 @@ class Suns_search(Wizard):
         import Tkinter
         import tkSimpleDialog
         Tkinter.Tk()
-        random_seed = tkSimpleDialog.askstring('Randomize Database','Random Seed (Integer):')
+        random_seed = tkSimpleDialog.askstring('Randomize Order','Random Seed (Integer):')
         return random_seed
     
     def ask_random_seed(self, ask_for_random_seed):
@@ -213,7 +213,7 @@ class Suns_search(Wizard):
         '''
         This method will create the Randomize Database menu.
         '''
-        random_seed_menu = [[2, 'Randomize Database', '']]
+        random_seed_menu = [[2, 'Randomize Order', '']]
         random_seed_menu.append([1, 'No', 'cmd.get_wizard().ask_random_seed(False)'])
         random_seed_menu.append([1, 'Yes', 'cmd.get_wizard().ask_random_seed(True)'])
         
@@ -291,16 +291,16 @@ class Suns_search(Wizard):
         self.menu['server'] = server_address_menu
         
         return [
-            [ 1, 'Suns Search',''],
-            [ 3, 'RMSD Cutoff: ' + str(self.rmsd_cutoff), 'rmsd'],
-            [ 3, 'Num Structures: ' + str(self.number_of_structures), 'num_structures'],
-            [ 3, 'Randomize DB: ' + {True: 'Yes, seed=%d' % self.random_seed, False: 'No'}[self.random_seed != 0], 'random_seed'],
+            [ 1, 'Structural Search Engine',''],
+            [ 2, 'Search', 'cmd.get_wizard().launch_search()'],
+            [ 3, 'RMSD: ' + str(self.rmsd_cutoff) + ' Angstroms', 'rmsd'],
+            [ 3, 'Cap: ' + str(self.number_of_structures) + ' results', 'num_structures'],
+            [ 3, 'Order: ' + {True: 'Random (Seed = %d' % self.random_seed + ')', False: 'Default'}[self.random_seed != 0], 'random_seed'],
             [ 3, 'Server: ' + self.suns_server_address, 'server'],
             [ 2, 'Clear Results', 'cmd.get_wizard().delete_current_results()'],
             [ 2, 'Clear Selection','cmd.get_wizard().clear_selection()'],
             [ 2, 'Cancel Search','cmd.get_wizard().cancel_search()'],
             [ 2, 'Fetch Full Context','cmd.get_wizard().fetch_full_context()'],
-            [ 2, 'Search', 'cmd.get_wizard().launch_search()'],
             [ 2, 'Done','cmd.set_wizard()'] ]
     
     def fetch_full_context(self):

@@ -144,7 +144,7 @@ class SearchThread(threading.Thread):
 # Wizard class
 class Suns_search(Wizard):
     '''
-    This class  will create the wizard for performing Suns searches.
+    This class will create the wizard for performing Suns searches.
     '''
     def __init__(self, _self=cmd):
         Wizard.__init__(self, _self)

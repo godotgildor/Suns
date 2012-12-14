@@ -235,7 +235,7 @@ class Suns_search(Wizard):
         This method will create a wizard menu for the possible number of structures
         to return.  Values range from 10 to 2000.
         '''
-        num_structures_menu = [[2, 'Number of Structures', '']]
+        num_structures_menu = [[2, 'Number of Results', '']]
         num_structures_menu.append([1, str(10) , 'cmd.get_wizard().set_num_structures(' + str(10) + ')'])
         num_structures_menu.append([1, str(50) , 'cmd.get_wizard().set_num_structures(' + str(50) + ')'])
         num_structures_menu.append([1, str(100) , 'cmd.get_wizard().set_num_structures(' + str(100) + ')'])
@@ -293,7 +293,7 @@ class Suns_search(Wizard):
         return [
             [ 1, 'Structural Search Engine',''],
             [ 2, 'Search', 'cmd.get_wizard().launch_search()'],
-            [ 3, 'RMSD: ' + str(self.rmsd_cutoff) + ' Angstroms', 'rmsd'],
+            [ 3, 'RMSD Cutoff: ' + str(self.rmsd_cutoff) + ' Angstroms', 'rmsd'],
             [ 3, 'Cap: ' + str(self.number_of_structures) + ' results', 'num_structures'],
             [ 3, 'Order: ' + {True: 'Random (Seed = %d' % self.random_seed + ')', False: 'Default'}[self.random_seed != 0], 'random_seed'],
             [ 3, 'Server: ' + self.suns_server_address, 'server'],

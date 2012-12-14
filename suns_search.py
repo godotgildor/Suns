@@ -275,7 +275,7 @@ class Suns_search(Wizard):
         Tkinter.Tk()
         server_address = tkSimpleDialog.askstring('Suns server address','Suns server address:')
         
-        self.set_server_address(server_address)
+        if server_address: self.set_server_address(server_address)
     
     def get_panel(self):
         '''

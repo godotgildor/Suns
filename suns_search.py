@@ -91,24 +91,19 @@ class SearchThread(threading.Thread):
     def run(self):
         # Create a unique identifier.
         try:
-            print '1'
             corr_id = str(uuid.uuid4())
             ############################################################################
             # First, setup the channel to the server.
             credentials = PlainCredentials('suns-client', 'suns-client')
-            print '2'
             connection = BlockingConnection(ConnectionParameters(host=self.suns_server_address, credentials=credentials, virtual_host='suns-vhost'))
-            print '3'
             self.channel = connection.channel()
             self.channel.exchange_declare(exchange='suns-exchange-responses', passive=True, durable=True)
             self.channel.exchange_declare(exchange='suns-exchange-requests', passive=True, durable=True)
-            print '4'
             # Now create the callback queue
             result = self.channel.queue_declare(exclusive=True)
             self.callback_queue = result.method.queue
             self.channel.queue_bind(exchange='suns-exchange-responses', queue = self.callback_queue, routing_key=self.callback_queue)
             self.channel.basic_consume(lambda c, m, h, b : self.handle_delivery(c, m, h, b, corr_id), no_ack=True, queue=self.callback_queue)
-            print '5'
             ############################################################################
             # Now ask the server to perform the search.
             print '[*] Searching...'

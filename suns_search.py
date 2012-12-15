@@ -354,26 +354,7 @@ class Suns_search(Wizard):
         '''
         This method will actually launch the search.
         '''
-        # Previously I had just get one big pdb string for the current selection.
-        # But this meant that Suns then has to rebreak the selection into words.
-        # This can cause a problem when one word comes from one object,
-        # and another word comes from another object, but they are close together.
-        # For instance, imagine the OH on Tyrosine.  The original search is for
-        # phenyl ring, then the subsequent search adds the OH from a different 
-        # object.  Then Suns would need to figure out that there should just 
-        # be one word for the O-C bond, despite there being two C's, that are
-        # almost on top of each other.  Now, I send each word separately and
-        # suns doesn't need to try and figure out how to break the words up.
-        # Gabe just informed me he was able to fix this on his end, so I
-        # should just send him the full pdbstring, not broken into words.
         pdbstr = self.cmd.get_pdbstr(SELECTION_NAME)
-        #pdbstrs = []
-        #for word in self.word_list:
-        #    pdbstrs += [self.cmd.get_pdbstr(self.word_list[word])]
-        
-        # Get a list of the objects that were part of this search.  We'll delete
-        # any of the previous search results EXCEPT any that are part of the 
-        # current search.
         exceptions = self.get_current_object_names(SELECTION_NAME)
         if(self.searchThread != None):
             self.searchThread.cancel_search()

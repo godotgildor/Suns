@@ -288,14 +288,15 @@ class Suns_search(Wizard):
         return [
             [ 1, 'Structural Search Engine',''],
             [ 2, 'Search', 'cmd.get_wizard().launch_search()'],
+            [ 2, 'Cancel Search','cmd.get_wizard().cancel_search()'],
             [ 3, 'RMSD Cutoff: ' + str(self.rmsd_cutoff) + ' Angstroms', 'rmsd'],
             [ 3, 'Cap: ' + str(self.number_of_structures) + ' results', 'num_structures'],
             [ 3, 'Order: ' + {True: 'Random (Seed = %d' % self.random_seed + ')', False: 'Default'}[self.random_seed != 0], 'random_seed'],
             [ 3, 'Server: ' + self.suns_server_address, 'server'],
             [ 2, 'Clear Results', 'cmd.get_wizard().delete_current_results()'],
             [ 2, 'Clear Selection','cmd.get_wizard().clear_selection()'],
-            [ 2, 'Cancel Search','cmd.get_wizard().cancel_search()'],
             [ 2, 'Fetch Full Context','cmd.get_wizard().fetch_full_context()'],
+# There should be a cancel for Fetch Full Context
             [ 2, 'Done','cmd.set_wizard()'] ]
     
     def fetch_full_context(self):

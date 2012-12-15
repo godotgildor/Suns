@@ -45,10 +45,10 @@ class SearchThread(threading.Thread):
             # 2 = There was a timeout on the server.
             # 3 = Error messages.
             if(body[0] == '0'):
-                self.current_status = 'Search done.'
+                self.current_status = '[*] Search done.'
                 self.channel.stop_consuming()
             elif(body[0] == '2'):
-                self.current_status = 'Time limit exceeded.'
+                self.current_status = '[*] Time limit exceeded.'
                 self.channel.stop_consuming()
                 return
             elif(body[0] == '3'):

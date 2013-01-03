@@ -118,7 +118,6 @@ class SearchThread(threading.Thread):
 
             self.cmd.center(SELECTION_NAME)
             self.cmd.orient(SELECTION_NAME)
-            print self.current_status
 
             ############################################################################
             # Now close the connection

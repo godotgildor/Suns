@@ -81,10 +81,7 @@ class SearchThread(threading.Thread):
                 sele_name = pdbid + '_%04d_%s' % (i, OBJECT_SUFFIX)
                 if(sele_name not in exceptions):
                     self.cmd.delete(sele_name)
-    
-    def get_current_results(self):
-        return self.pdbs
-    
+
     # Perform our search.
     def run(self):
         # Create a unique identifier.
@@ -302,7 +299,6 @@ class Suns_search(Wizard):
         if(self.searchThread == None):
             return
         
-        #current_results = self.searchThread.get_current_results()
         objs = cmd.get_names('objects', enabled_only=1)
         for obj in objs:
             w = obj.split('_')

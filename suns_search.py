@@ -131,15 +131,13 @@ class SearchThread(threading.Thread):
 
             self.cmd.center(SELECTION_NAME)
             self.cmd.orient(SELECTION_NAME)
-            print self.current_status('[*] Error: current_status unset', lambda x: x)
+            print self.current_status("[*] Bug: 'current_status' unset", lambda x: x)
 
             ############################################################################
             # Now close the connection
             connection.close()
         except socket.error:
-            print 'Error: Unable to connect to server ' + self.suns_server_address + '.'
-        except:
-            print 'Error communicating with server.'
+            print "[*] Error: Unable to connect to '" + self.suns_server_address + "'"
 
 ################################################################################
 # Wizard class

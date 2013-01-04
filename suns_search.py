@@ -129,7 +129,6 @@ class SearchThread(threading.Thread):
             # This call is a blocking call.  It will block until channel.stop_consuming is called.
             self.channel.start_consuming()
 
-            self.cmd.center(SELECTION_NAME)
             self.cmd.orient(SELECTION_NAME)
             print self.current_status("[*] Bug: 'current_status' unset", lambda x: x)
 

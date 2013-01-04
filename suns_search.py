@@ -19,14 +19,12 @@ class SearchThread(threading.Thread):
     def __init__(self, rmsd, num_structures, random_seed, cmd, pdbstrs, server_address):
         threading.Thread.__init__(self)
         
-        request = {}
-        request['rmsd_cutoff'] = rmsd
-        request['num_structures'] = num_structures
-        request['random_seed'] = random_seed
-        request['bb_aa_specific'] = False
-        request['atoms'] = pdbstrs
-        
-        self.request = json.dumps(request)
+        self.request = json.dumps({
+            'rmsd_cutoff'   : rmsd,
+            'num_structures': num_structures,
+            'random_seed'   : random_seed,
+            'atoms'         : pdbstrs
+        })
         self.cmd = cmd
         self.channel = None
         self.callback_queue = None

@@ -368,7 +368,6 @@ class Suns_search(Wizard):
         '''
         if(self.searchThread != None):
             self.searchThread.cancel_search()
-        self.cmd.orient(SELECTION_NAME)
     
     def do_select(self, name, selection_logic):
         if(selection_logic != ''):

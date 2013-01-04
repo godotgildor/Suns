@@ -38,15 +38,16 @@ class SearchThread(threading.Thread):
         
     def handle_delivery(self, channel, method_frame, header_frame, body, corr_id=None):
         if(corr_id == header_frame.correlation_id):
-            # TODO Consider changning to JSON in the future.
+            # TODO Consider changing to JSON in the future.
             # The first byte is the status.
-            # 0 = This is the last search result.
+            # 0 = There are no more search results
             # 1 = More search results to follow.
             # 2 = There was a timeout on the server.
             # 3 = Error messages.
             if(body[0] == '0'):
                 self.current_status = '[*] Search done.'
                 self.channel.stop_consuming()
+                return
             elif(body[0] == '2'):
                 self.current_status = '[*] Time limit exceeded.'
                 self.channel.stop_consuming()
@@ -72,7 +73,7 @@ class SearchThread(threading.Thread):
         # If we have declared a callback queue, then delete it
         # and stop consuming.
         if(self.callback_queue != None):
-            self.cuurent_status = 'Search cancelled.'
+            self.current_status = 'Search cancelled.'
             self.channel.queue_delete(queue=self.callback_queue)
             self.channel.stop_consuming()
             

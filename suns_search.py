@@ -13,21 +13,6 @@ OBJECT_SUFFIX = 'suns'
 
 SUNS_SERVER_ADDRESS = 'suns.degradolab.org'
 
-## Haskell-isms
-# type Maybe a = (r, a -> r) -> r
-
-# nothing :: () -> Maybe a
-def nothing():
-    def f(n, j):
-        return n
-    return f
-
-# just :: a -> Maybe a
-def just(a):
-    def f(n, j):
-        return j(a)
-    return f
-
 ################################################################################
 # Here is the class that will actual do the search.
 class SearchThread(threading.Thread):
@@ -46,7 +31,7 @@ class SearchThread(threading.Thread):
         self.channel = None
         self.callback_queue = None
         self.pdbs = {}
-        self.current_status = nothing()
+        self.current_status = "[*] Bug: 'current_status' unset"
         self.suns_server_address = server_address
         
     def handle_delivery(self, channel, method_frame, header_frame, body, corr_id=None):
@@ -58,11 +43,11 @@ class SearchThread(threading.Thread):
             # 2 = Search time limit exceeded
             # 3 = Error message
             if(body[0] == '0'):
-                self.current_status = just('[*] Search done.')
+                self.current_status = '[*] Search done.'
                 self.channel.stop_consuming()
                 return
             elif(body[0] == '2'):
-                self.current_status = just('[*] Time limit exceeded.')
+                self.current_status = '[*] Time limit exceeded.'
                 self.channel.stop_consuming()
                 return
             elif(body[0] == '3'):
@@ -86,7 +71,7 @@ class SearchThread(threading.Thread):
         # If we have declared a callback queue, then delete it
         # and stop consuming.
         if(self.callback_queue != None):
-            self.current_status = just('[*] Search cancelled.')
+            self.current_status = '[*] Search cancelled.'
             self.channel.queue_delete(queue=self.callback_queue)
             self.channel.stop_consuming()
             
@@ -130,7 +115,7 @@ class SearchThread(threading.Thread):
             self.channel.start_consuming()
 
             self.cmd.orient(SELECTION_NAME)
-            print self.current_status("[*] Bug: 'current_status' unset", lambda x: x)
+            print self.current_status
 
             ############################################################################
             # Now close the connection

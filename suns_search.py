@@ -31,6 +31,8 @@ class SearchThread(threading.Thread):
         self.pdbs = {}
         self.current_status = "[*] Bug: 'current_status' unset"
         self.suns_server_address = server_address
+        self.queueLock = threading.Lock()
+        self.channelLock = threading.Lock()
         
     def handle_delivery(self, channel, method_frame, header_frame, body, corr_id=None):
         if(corr_id == header_frame.correlation_id):
@@ -41,12 +43,12 @@ class SearchThread(threading.Thread):
             # 2 = Search time limit exceeded
             # 3 = Error message
             if(body[0] == '0'):
-                self.current_status = '[*] Search done.'
-                self.channel.stop_consuming()
+                self.current_status = '[*] Search done'
+                self.stop()
                 return
             elif(body[0] == '2'):
-                self.current_status = '[*] Time limit exceeded.'
-                self.channel.stop_consuming()
+                self.current_status = '[*] Time limit exceeded'
+                self.stop()
                 return
             elif(body[0] == '3'):
                 print '[*] Error: ' + body[1:]
@@ -59,20 +61,15 @@ class SearchThread(threading.Thread):
             sele_name = pdbid + '_%04d_%s' % (self.pdbs[pdbid], OBJECT_SUFFIX)
             # Delete this object if it already exists for some reason
             self.cmd.delete(sele_name)
-            # Place the data in pymol.
+            # Load the structure into pymol.
             self.cmd.read_pdbstr(body[5:], sele_name)
             # Increment the number of results for this pdbid
             self.pdbs[pdbid] += 1
     
     # This will cancel any current searches.
     def cancel_search(self):
-        # If we have declared a callback queue, then delete it
-        # and stop consuming.
-        if(self.channel is not None):
-            self.current_status = '[*] Search cancelled.'
-            self.channel.stop_consuming()
-            if(self.callback_queue is not None):
-                self.channel.queue_delete(queue=self.callback_queue)
+        self.current_status = '[*] Search cancelled'
+        self.stop()
             
     # Iterate over the current results and delete them.
     def delete_current_results(self, exceptions = {}):
@@ -84,40 +81,59 @@ class SearchThread(threading.Thread):
 
     # Perform our search.
     def run(self):
-        # Create a unique identifier.
+        corr_id = str(uuid.uuid4())
+        credentials = PlainCredentials('suns-client', 'suns-client')
         try:
-            corr_id = str(uuid.uuid4())
-            ############################################################################
-            # First, setup the channel to the server.
-            credentials = PlainCredentials('suns-client', 'suns-client')
             connection = BlockingConnection(ConnectionParameters(host=self.suns_server_address, credentials=credentials, virtual_host='suns-vhost'))
-            self.channel = connection.channel()
-            self.channel.exchange_declare(exchange='suns-exchange-responses', passive=True, durable=True)
-            self.channel.exchange_declare(exchange='suns-exchange-requests', passive=True, durable=True)
-            # Now create the callback queue
-            result = self.channel.queue_declare(exclusive=True)
-            self.callback_queue = result.method.queue
-            self.channel.queue_bind(exchange='suns-exchange-responses', queue = self.callback_queue, routing_key=self.callback_queue)
-            self.channel.basic_consume(lambda c, m, h, b : self.handle_delivery(c, m, h, b, corr_id), no_ack=True, queue=self.callback_queue)
-            ############################################################################
-            # Now ask the server to perform the search.
-            print '[*] Searching...'
-            # Now issue the request.
-            self.channel.basic_publish(exchange = 'suns-exchange-requests', routing_key = '1.0.0',
-                                  properties=BasicProperties(reply_to = self.callback_queue, correlation_id = corr_id ),
-                                  body = self.request)
-
-            # This call is a blocking call.  It will block until channel.stop_consuming is called.
-            self.channel.start_consuming()
-
-            self.cmd.orient(SELECTION_NAME)
-            print self.current_status
-
-            ############################################################################
-            # Now close the connection
-            connection.close()
+            try:
+                self.channelLock.acquire()
+                try:
+                    self.channel = connection.channel()
+                finally:
+                    self.channelLock.release()
+                self.channel.exchange_declare(exchange='suns-exchange-responses', passive=True, durable=True)
+                self.channel.exchange_declare(exchange='suns-exchange-requests' , passive=True, durable=True)
+                
+                result = self.channel.queue_declare(exclusive=True)
+                self.queueLock.acquire()
+                try:
+                    self.callback_queue = result.method.queue
+                finally:
+                    self.queueLock.release()
+                self.channel.queue_bind(exchange='suns-exchange-responses', queue = self.callback_queue, routing_key=self.callback_queue)
+                self.channel.basic_consume(lambda c, m, h, b : self.handle_delivery(c, m, h, b, corr_id), no_ack=True, queue=self.callback_queue)
+                
+                print '[*] Searching...'
+                # Now issue the request.
+                self.channel.basic_publish(exchange = 'suns-exchange-requests', routing_key = '1.0.0',
+                                      properties=BasicProperties(reply_to = self.callback_queue, correlation_id = corr_id ),
+                                      body = self.request)
+    
+                # This call is a blocking call.  It will block until channel.stop_consuming is called.
+                self.channel.start_consuming()
+            finally:
+                cmd.orient(SELECTION_NAME)
+                print self.current_status
+                connection.close()
         except socket.error:
             print "[*] Error: Unable to connect to '" + self.suns_server_address + "'"
+
+
+    def stop(self):
+        if(self.channel is not None):
+            self.channelLock.acquire()
+            try:
+                self.channel.stop_consuming()
+                if(self.callback_queue is not None):
+                    self.queueLock.acquire()
+                    try:
+                        self.channel.queue_delete(queue=self.callback_queue)
+                        self.channel.callback_queue = None
+                    finally:
+                        self.queueLock.release()
+                self.channel = None
+            finally:
+                self.channelLock.release()
 
 ################################################################################
 # Wizard class
@@ -147,6 +163,7 @@ class Suns_search(Wizard):
         Once we are done with the wizard, we should set various pymol
         parameters back to their original values.
         '''
+        self.cancel_search()
         cmd.config_mouse('three_button_viewing')
         cmd.set('auto_hide_selections', self.prev_auto_hide_setting)
         cmd.set('mouse_selection_mode', self.prev_mouse_mode)
@@ -346,9 +363,8 @@ class Suns_search(Wizard):
         '''
         pdbstr = self.cmd.get_pdbstr(SELECTION_NAME)
         exceptions = self.get_current_object_names(SELECTION_NAME)
-        if(self.searchThread != None):
-            self.searchThread.cancel_search()
-            self.delete_current_results(exceptions)
+        self.cancel_search()
+        self.delete_current_results(exceptions)
         self.searchThread = SearchThread(self.rmsd_cutoff, self.number_of_structures, self.random_seed, self.cmd, pdbstr, self.suns_server_address)
         self.searchThread.start()
     
@@ -363,7 +379,7 @@ class Suns_search(Wizard):
         '''
         This method will cancel searching.
         '''
-        if(self.searchThread != None):
+        if(self.searchThread is not None):
             self.searchThread.cancel_search()
     
     def do_select(self, name, selection_logic):

@@ -68,10 +68,11 @@ class SearchThread(threading.Thread):
     def cancel_search(self):
         # If we have declared a callback queue, then delete it
         # and stop consuming.
-        if(self.callback_queue != None):
+        if(self.channel is not None):
             self.current_status = '[*] Search cancelled.'
-            self.channel.queue_delete(queue=self.callback_queue)
             self.channel.stop_consuming()
+            if(self.callback_queue is not None):
+                self.channel.queue_delete(queue=self.callback_queue)
             
     # Iterate over the current results and delete them.
     def delete_current_results(self, exceptions = {}):

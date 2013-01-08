@@ -1,6 +1,7 @@
 from pymol.wizard import Wizard
 from pymol import cmd
 from pika import *
+import pymol.controlling
 import uuid
 import threading
 import json
@@ -49,6 +50,9 @@ class SearchThread(threading.Thread):
                     self.pdbs[pdbid] = 0
                 sele_name = pdbid + '_%04d_%s' % (self.pdbs[pdbid], OBJECT_SUFFIX)
                 # Delete this object if it already exists for some reason
+                #while exists sele_name:
+                #    self.pdbs[pdbid] += 1
+                #    sele_name = pdbid + '_%04d_%s' % (self.pdbs[pdbid], OBJECT_SUFFIX)
                 self.cmd.delete(sele_name)
                 # Load the structure into pymol.
                 self.cmd.read_pdbstr(body[5:], sele_name)
@@ -153,11 +157,10 @@ class Suns_search(Wizard):
         self.searchThread = None
         self.prev_auto_hide_setting = self.cmd.get('auto_hide_selections')
         self.cmd.set('auto_hide_selections',0)
-        self.prev_mouse_mode = self.cmd.get('mouse_selection_mode')
-        self.cmd.set('mouse_selection_mode',0)
-        self.cmd.config_mouse('three_button_editing')
+        self.cmd.button('single_left', 'None', 'PkTB')
         self.do_select(SELECTION_NAME, 'none')
         self.suns_server_address = SUNS_SERVER_ADDRESS
+        self.prompt = ['Select motifs using left click']
     
     def cleanup(self):
         '''
@@ -165,9 +168,14 @@ class Suns_search(Wizard):
         parameters back to their original values.
         '''
         self.stop_search()
-        self.cmd.config_mouse('three_button_viewing')
+        
+        # This is a hack.  I don't yet know how to retrieve the previous value
+        # of this button setting so that I can restore the original value.  For
+        # now I assume that the user was in a viewing mode, where the default
+        # behavior for left click is '+/-'.
+        self.cmd.button('single_left', 'None', '+/-')
+        
         self.cmd.set('auto_hide_selections', self.prev_auto_hide_setting)
-        self.cmd.set('mouse_selection_mode', self.prev_mouse_mode)
         self.cmd.delete(SELECTION_NAME)
     
     def set_rmsd(self, rmsd):
@@ -432,7 +440,7 @@ class Suns_search(Wizard):
             #        del self.word_list[key]
             #    else:
             #        self.word_list[key] = '((model %s and segi %s and chain %s and resn %s and resi %s and name %s) or (model %s and segi %s and chain %s and resn %s and resi %s and name %s) )' % key
-            
-            self.cmd.unpick()
-            self.current_selection = ' or '.join(self.word_list.values()).strip()
-            self.do_select(SELECTION_NAME, self.current_selection)
+        
+        self.cmd.unpick()
+        self.current_selection = ' or '.join(self.word_list.values()).strip()
+        self.do_select(SELECTION_NAME, self.current_selection)

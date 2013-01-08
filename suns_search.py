@@ -317,14 +317,14 @@ class Suns_search(Wizard):
         and then fetch and align the full structure so that the user can 
         see the full context of the match.
         '''
-        if(self.searchThread == None):
+        if(self.searchThread is None):
             return
         
         objs = self.cmd.get_names('objects', enabled_only=1)
         for obj in objs:
             w = obj.split('_')
             # Note that the search results will be named pdbid_XXXX.
-            if( (len(w) == 2) and (len(w[0]) == 4) and (len(w[1]) == 4)):
+            if( (len(w) == 3) and (len(w[0]) == 4) and (len(w[1]) == 4)):
                 new_object_name = w[0] + '_full_' + w[1]
                 self.cmd.fetch(w[0], new_object_name)
                 dict = {'x' : []}

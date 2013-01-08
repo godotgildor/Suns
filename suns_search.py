@@ -277,10 +277,12 @@ class Suns_search(Wizard):
         '''
         import Tkinter
         import tkSimpleDialog
-        server_address = tkSimpleDialog.askstring('Suns server address','Suns server address:')
+        try:
+            server_address = tkSimpleDialog.askstring('Suns server address','Suns server address:')
+        except:
+            server_address = SUNS_SERVER_ADDRESS
         
-        if(server_address is not None):
-            self.set_server_address(server_address)
+        self.set_server_address(server_address)
     
     def get_panel(self):
         '''

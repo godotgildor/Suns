@@ -201,7 +201,6 @@ class Suns_search(Wizard):
         '''
         import Tkinter
         import tkSimpleDialog
-        Tkinter.Tk()
         random_seed = tkSimpleDialog.askstring('Randomize Order','Random Seed (Integer):')
         return random_seed
     
@@ -278,7 +277,6 @@ class Suns_search(Wizard):
         '''
         import Tkinter
         import tkSimpleDialog
-        Tkinter.Tk()
         server_address = tkSimpleDialog.askstring('Suns server address','Suns server address:')
         
         if(server_address is not None):

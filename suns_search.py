@@ -92,7 +92,7 @@ class SearchThread(threading.Thread):
                     self.channel.basic_consume(lambda c, m, h, b : self.handle_delivery(c, m, h, b, corr_id), no_ack=True, queue=self.callback_queue)
                     
                     # Send Request
-                    print '[*] Searching...'
+                    print '[*] Waiting for Server...'
                     self.channel.basic_publish(exchange = 'suns-exchange-requests', routing_key = '1.0.0',
                                           properties=BasicProperties(reply_to = self.callback_queue, correlation_id = corr_id ),
                                           body = self.request)

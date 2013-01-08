@@ -164,7 +164,7 @@ class Suns_search(Wizard):
         Once we are done with the wizard, we should set various pymol
         parameters back to their original values.
         '''
-        self.cancel_search()
+        self.stop_search()
         self.cmd.config_mouse('three_button_viewing')
         self.cmd.set('auto_hide_selections', self.prev_auto_hide_setting)
         self.cmd.set('mouse_selection_mode', self.prev_mouse_mode)
@@ -371,11 +371,12 @@ class Suns_search(Wizard):
         self.cmd.delete(SELECTION_NAME)
     
     def cancel_search(self):
-        '''
-        This method will cancel searching.
-        '''
         if(self.searchThread is not None):
             self.searchThread.cancel_search()
+
+    def stop_search(self):
+        if(self.searchThread is not None):
+            self.searchThread.stop()
     
     def do_select(self, name, selection_logic):
         if(selection_logic != ''):

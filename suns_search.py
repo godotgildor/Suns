@@ -13,12 +13,9 @@ OBJECT_SUFFIX = 'suns'
 
 SUNS_SERVER_ADDRESS = 'suns.degradolab.org'
 
-################################################################################
-# Here is the class that will actual do the search.
 class SearchThread(threading.Thread):
     def __init__(self, rmsd, num_structures, random_seed, pdbstrs, server_address, cmd):
         threading.Thread.__init__(self)
-        
         self.request = json.dumps({
             'rmsd_cutoff'   : rmsd,
             'num_structures': num_structures,
@@ -33,52 +30,43 @@ class SearchThread(threading.Thread):
         self.begun = False
         self.ended = False
         self.lock = threading.Lock()
-        
+    
     def handle_delivery(self, channel, method_frame, header_frame, body, corr_id=None):
         if(corr_id == header_frame.correlation_id):
             # TODO Consider changing to JSON in the future.
             # The first byte is the status.
             # 0 = No more search results
-            # 1 = A search result
+            # 1 = Search result: Body = PDB ID + PDB structure
             # 2 = Search time limit exceeded
-            # 3 = Error message
+            # 3 = Error: Body = message
             if(body[0] == '0'):
                 print '[*] Search done'
                 self.stop()
-                return
+            elif(body[0] == '1'):
+                # The next 4 bytes are the pdbid.
+                pdbid = body[1:5]
+                if(pdbid not in self.pdbs):
+                    self.pdbs[pdbid] = 0
+                sele_name = pdbid + '_%04d_%s' % (self.pdbs[pdbid], OBJECT_SUFFIX)
+                # Delete this object if it already exists for some reason
+                self.cmd.delete(sele_name)
+                # Load the structure into pymol.
+                self.cmd.read_pdbstr(body[5:], sele_name)
+                # Increment the number of results for this pdbid
+                self.pdbs[pdbid] += 1
             elif(body[0] == '2'):
                 print '[*] Time limit exceeded'
                 self.stop()
-                return
             elif(body[0] == '3'):
                 print '[*] Error: ' + body[1:]
-                return
-                
-            # The next 4 bytes are the pdbid.
-            pdbid = body[1:5]
-            if(pdbid not in self.pdbs):
-                self.pdbs[pdbid] = 0
-            sele_name = pdbid + '_%04d_%s' % (self.pdbs[pdbid], OBJECT_SUFFIX)
-            # Delete this object if it already exists for some reason
-            self.cmd.delete(sele_name)
-            # Load the structure into pymol.
-            self.cmd.read_pdbstr(body[5:], sele_name)
-            # Increment the number of results for this pdbid
-            self.pdbs[pdbid] += 1
     
-    # This will cancel any current searches.
-    def cancel_search(self):
-        print '[*] Search cancelled'
-        self.stop()
-            
-    # Iterate over the current results and delete them.
     def delete_current_results(self, exceptions = {}):
         for pdbid in self.pdbs:
             for i in range(self.pdbs[pdbid]):
                 sele_name = pdbid + '_%04d_%s' % (i, OBJECT_SUFFIX)
                 if(sele_name not in exceptions):
                     self.cmd.delete(sele_name)
-
+    
     # Perform our search.
     def run(self):
         corr_id = str(uuid.uuid4())
@@ -104,7 +92,7 @@ class SearchThread(threading.Thread):
                     self.channel.basic_publish(exchange = 'suns-exchange-requests', routing_key = '1.0.0',
                                           properties=BasicProperties(reply_to = self.callback_queue, correlation_id = corr_id ),
                                           body = self.request)
-        
+                    
                     # This call is a blocking call.  It will block until channel.stop_consuming is called.
                     try:
                         self.lock.acquire()
@@ -117,9 +105,9 @@ class SearchThread(threading.Thread):
                         #     This thread could receive a stop() signal before
                         #     start_consuming or could receive a second
                         #     stop() signal after done consuming.  Pika does not
-                        #     expose a good way to release the lock after
-                        #     beginning consuming or to acquire the lock right
-                        #     before done consuming
+                        #     expose a good way to release the lock immediately
+                        #     after beginning consuming or to acquire the lock
+                        #     immediately before done consuming
                         if (not ended):
                             self.channel.start_consuming()
                     finally:
@@ -135,7 +123,11 @@ class SearchThread(threading.Thread):
                 connection.close()
         except socket.error:
             print "[*] Error: Unable to connect to '" + self.suns_server_address + "'"
-
+    
+    def cancel_search(self):
+        print '[*] Search cancelled'
+        self.stop()
+    
     def stop(self):
         self.lock.acquire()
         try:
@@ -146,8 +138,6 @@ class SearchThread(threading.Thread):
         finally:
             self.lock.release()
 
-################################################################################
-# Wizard class
 class Suns_search(Wizard):
     '''
     This class  will create the wizard for performing Suns searches.
@@ -161,7 +151,7 @@ class Suns_search(Wizard):
         self.random_seed = 0
         self.number_of_structures = 100
         self.searchThread = None
-        self.prev_auto_hide_setting = self.cmd.get('auto_hide_selection')
+        self.prev_auto_hide_setting = self.cmd.get('auto_hide_selections')
         self.cmd.set('auto_hide_selections',0)
         self.prev_mouse_mode = self.cmd.get('mouse_selection_mode')
         self.cmd.set('mouse_selection_mode',0)

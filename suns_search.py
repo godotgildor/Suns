@@ -359,7 +359,7 @@ class Suns_search(Wizard):
         '''
         pdbstr = self.cmd.get_pdbstr(SELECTION_NAME)
         exceptions = self.get_current_object_names(SELECTION_NAME)
-        self.cancel_search()
+        self.stop_search()
         self.delete_current_results(exceptions)
         self.searchThread = SearchThread(self.rmsd_cutoff, self.number_of_structures, self.random_seed, pdbstr, self.suns_server_address, self.cmd)
         self.searchThread.start()

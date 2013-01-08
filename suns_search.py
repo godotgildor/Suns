@@ -16,7 +16,7 @@ SUNS_SERVER_ADDRESS = 'suns.degradolab.org'
 ################################################################################
 # Here is the class that will actual do the search.
 class SearchThread(threading.Thread):
-    def __init__(self, rmsd, num_structures, random_seed, cmd, pdbstrs, server_address):
+    def __init__(self, rmsd, num_structures, random_seed, pdbstrs, server_address, cmd):
         threading.Thread.__init__(self)
         
         self.request = json.dumps({
@@ -29,10 +29,10 @@ class SearchThread(threading.Thread):
         self.channel = None
         self.callback_queue = None
         self.pdbs = {}
-        self.current_status = "[*] Bug: 'current_status' unset"
         self.suns_server_address = server_address
-        self.queueLock = threading.Lock()
-        self.channelLock = threading.Lock()
+        self.begun = False
+        self.ended = False
+        self.lock = threading.Lock()
         
     def handle_delivery(self, channel, method_frame, header_frame, body, corr_id=None):
         if(corr_id == header_frame.correlation_id):
@@ -43,11 +43,11 @@ class SearchThread(threading.Thread):
             # 2 = Search time limit exceeded
             # 3 = Error message
             if(body[0] == '0'):
-                self.current_status = '[*] Search done'
+                print '[*] Search done'
                 self.stop()
                 return
             elif(body[0] == '2'):
-                self.current_status = '[*] Time limit exceeded'
+                print '[*] Time limit exceeded'
                 self.stop()
                 return
             elif(body[0] == '3'):
@@ -68,7 +68,7 @@ class SearchThread(threading.Thread):
     
     # This will cancel any current searches.
     def cancel_search(self):
-        self.current_status = '[*] Search cancelled'
+        print '[*] Search cancelled'
         self.stop()
             
     # Iterate over the current results and delete them.
@@ -84,56 +84,67 @@ class SearchThread(threading.Thread):
         corr_id = str(uuid.uuid4())
         credentials = PlainCredentials('suns-client', 'suns-client')
         try:
+            # Connection initialization
             connection = BlockingConnection(ConnectionParameters(host=self.suns_server_address, credentials=credentials, virtual_host='suns-vhost'))
             try:
-                self.channelLock.acquire()
-                try:
-                    self.channel = connection.channel()
-                finally:
-                    self.channelLock.release()
+                # Channel Initialization
+                self.channel = connection.channel()
                 self.channel.exchange_declare(exchange='suns-exchange-responses', passive=True, durable=True)
                 self.channel.exchange_declare(exchange='suns-exchange-requests' , passive=True, durable=True)
                 
+                # Queue Initialization
                 result = self.channel.queue_declare(exclusive=True)
-                self.queueLock.acquire()
                 try:
                     self.callback_queue = result.method.queue
+                    self.channel.queue_bind(exchange='suns-exchange-responses', queue = self.callback_queue, routing_key=self.callback_queue)
+                    self.channel.basic_consume(lambda c, m, h, b : self.handle_delivery(c, m, h, b, corr_id), no_ack=True, queue=self.callback_queue)
+                    
+                    # Send Request
+                    print '[*] Searching...'
+                    self.channel.basic_publish(exchange = 'suns-exchange-requests', routing_key = '1.0.0',
+                                          properties=BasicProperties(reply_to = self.callback_queue, correlation_id = corr_id ),
+                                          body = self.request)
+        
+                    # This call is a blocking call.  It will block until channel.stop_consuming is called.
+                    try:
+                        self.lock.acquire()
+                        try:
+                            self.begun = True
+                            ended = self.ended
+                        finally:
+                            self.lock.release()
+                        # Race condition:
+                        #     This thread could receive a stop() signal before
+                        #     start_consuming or could receive a second
+                        #     stop() signal after done consuming.  Pika does not
+                        #     expose a good way to release the lock after
+                        #     beginning consuming or to acquire the lock right
+                        #     before done consuming
+                        if (not ended):
+                            self.channel.start_consuming()
+                    finally:
+                        self.lock.acquire()
+                        try:
+                            self.ended = True
+                        finally:
+                            self.lock.release()
+                        self.cmd.orient(SELECTION_NAME)
                 finally:
-                    self.queueLock.release()
-                self.channel.queue_bind(exchange='suns-exchange-responses', queue = self.callback_queue, routing_key=self.callback_queue)
-                self.channel.basic_consume(lambda c, m, h, b : self.handle_delivery(c, m, h, b, corr_id), no_ack=True, queue=self.callback_queue)
-                
-                print '[*] Searching...'
-                # Now issue the request.
-                self.channel.basic_publish(exchange = 'suns-exchange-requests', routing_key = '1.0.0',
-                                      properties=BasicProperties(reply_to = self.callback_queue, correlation_id = corr_id ),
-                                      body = self.request)
-    
-                # This call is a blocking call.  It will block until channel.stop_consuming is called.
-                self.channel.start_consuming()
+                    self.channel.queue_delete(queue=self.callback_queue)
             finally:
-                cmd.orient(SELECTION_NAME)
-                print self.current_status
                 connection.close()
         except socket.error:
             print "[*] Error: Unable to connect to '" + self.suns_server_address + "'"
 
-
     def stop(self):
-        if(self.channel is not None):
-            self.channelLock.acquire()
-            try:
-                self.channel.stop_consuming()
-                if(self.callback_queue is not None):
-                    self.queueLock.acquire()
-                    try:
-                        self.channel.queue_delete(queue=self.callback_queue)
-                        self.channel.callback_queue = None
-                    finally:
-                        self.queueLock.release()
-                self.channel = None
-            finally:
-                self.channelLock.release()
+        self.lock.acquire()
+        try:
+            if(not self.ended):
+                if(self.begun):
+                    self.channel.stop_consuming()
+                self.ended = True
+        finally:
+            self.lock.release()
 
 ################################################################################
 # Wizard class
@@ -151,10 +162,10 @@ class Suns_search(Wizard):
         self.number_of_structures = 100
         self.searchThread = None
         self.prev_auto_hide_setting = self.cmd.get('auto_hide_selection')
-        cmd.set('auto_hide_selections',0)
+        self.cmd.set('auto_hide_selections',0)
         self.prev_mouse_mode = self.cmd.get('mouse_selection_mode')
-        cmd.set('mouse_selection_mode',0)
-        cmd.config_mouse('three_button_editing')
+        self.cmd.set('mouse_selection_mode',0)
+        self.cmd.config_mouse('three_button_editing')
         self.do_select(SELECTION_NAME, 'none')
         self.suns_server_address = SUNS_SERVER_ADDRESS
     
@@ -164,9 +175,9 @@ class Suns_search(Wizard):
         parameters back to their original values.
         '''
         self.cancel_search()
-        cmd.config_mouse('three_button_viewing')
-        cmd.set('auto_hide_selections', self.prev_auto_hide_setting)
-        cmd.set('mouse_selection_mode', self.prev_mouse_mode)
+        self.cmd.config_mouse('three_button_viewing')
+        self.cmd.set('auto_hide_selections', self.prev_auto_hide_setting)
+        self.cmd.set('mouse_selection_mode', self.prev_mouse_mode)
         self.cmd.delete(SELECTION_NAME)
     
     def set_rmsd(self, rmsd):
@@ -239,14 +250,8 @@ class Suns_search(Wizard):
         to return.  Values range from 10 to 2000.
         '''
         num_structures_menu = [[2, 'Number of Results', '']]
-        num_structures_menu.append([1, str(10) , 'cmd.get_wizard().set_num_structures(' + str(10) + ')'])
-        num_structures_menu.append([1, str(50) , 'cmd.get_wizard().set_num_structures(' + str(50) + ')'])
-        num_structures_menu.append([1, str(100) , 'cmd.get_wizard().set_num_structures(' + str(100) + ')'])
-        num_structures_menu.append([1, str(250) , 'cmd.get_wizard().set_num_structures(' + str(250) + ')'])
-        num_structures_menu.append([1, str(500) , 'cmd.get_wizard().set_num_structures(' + str(500) + ')'])
-        num_structures_menu.append([1, str(1000) , 'cmd.get_wizard().set_num_structures(' + str(1000) + ')'])
-        num_structures_menu.append([1, str(1500) , 'cmd.get_wizard().set_num_structures(' + str(1500) + ')'])
-        num_structures_menu.append([1, str(2000) , 'cmd.get_wizard().set_num_structures(' + str(2000) + ')'])
+        for n in [10, 20, 50, 100, 200, 500, 1000]:
+            num_structures_menu.append([1, str(n) , 'cmd.get_wizard().set_num_structures(' + str(n) + ')'])
         
         return num_structures_menu
     
@@ -316,13 +321,13 @@ class Suns_search(Wizard):
         if(self.searchThread == None):
             return
         
-        objs = cmd.get_names('objects', enabled_only=1)
+        objs = self.cmd.get_names('objects', enabled_only=1)
         for obj in objs:
             w = obj.split('_')
             # Note that the search results will be named pdbid_XXXX.
             if( (len(w) == 2) and (len(w[0]) == 4) and (len(w[1]) == 4)):
                 new_object_name = w[0] + '_full_' + w[1]
-                cmd.fetch(w[0], new_object_name)
+                self.cmd.fetch(w[0], new_object_name)
                 dict = {'x' : []}
                 # Get the atom info for the current object.
                 self.cmd.iterate(obj, 'x.append( [model,segi,chain,resn,resi,name,alt] )', space=dict)
@@ -330,7 +335,7 @@ class Suns_search(Wizard):
                 for item in dict['x']:
                     selection += ['(chain %s and resn %s and resi %s and name %s)' % tuple(item[2:6])]
                 selection = '(' + ' or '.join(selection) + ')'
-                cmd.super(new_object_name + ' and (' + selection + ')', obj + ' and (' + selection + ')')
+                self.cmd.super(new_object_name + ' and (' + selection + ')', obj + ' and (' + selection + ')')
                 
     
     def delete_current_results(self, exceptions={}):
@@ -365,7 +370,7 @@ class Suns_search(Wizard):
         exceptions = self.get_current_object_names(SELECTION_NAME)
         self.cancel_search()
         self.delete_current_results(exceptions)
-        self.searchThread = SearchThread(self.rmsd_cutoff, self.number_of_structures, self.random_seed, self.cmd, pdbstr, self.suns_server_address)
+        self.searchThread = SearchThread(self.rmsd_cutoff, self.number_of_structures, self.random_seed, pdbstr, self.suns_server_address, self.cmd)
         self.searchThread.start()
     
     def clear_selection(self):

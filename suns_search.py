@@ -309,8 +309,7 @@ class Suns_search(Wizard):
             [ 3, 'Server: ' + self.suns_server_address, 'server'],
             [ 2, 'Clear Results', 'cmd.get_wizard().delete_current_results()'],
             [ 2, 'Clear Selection','cmd.get_wizard().clear_selection()'],
-            [ 2, 'Fetch Full Context','cmd.get_wizard().fetch_full_context()'],
-# There should be a cancel for Fetch Full Context
+            [ 2, 'Fetch Full Contexts','cmd.get_wizard().fetch_full_context()'],
             [ 2, 'Done','cmd.set_wizard()'] ]
     
     def fetch_full_context(self):
@@ -346,10 +345,10 @@ class Suns_search(Wizard):
             for item in dict['x']:
                 altLoc = item[6]
                 # PyMOL chokes on empty arguments to 'alt'
-                if(altLoc.isalpha()):
-                    selection += ['(chain %s and resn %s and resi %s and name %s and alt %s)' % tuple(item[2:7])]
-                else:
+                if(altLoc.strip() == ''):
                     selection += ['(chain %s and resn %s and resi %s and name %s)' % tuple(item[2:6])]
+                else:
+                    selection += ['(chain %s and resn %s and resi %s and name %s and alt %s)' % tuple(item[2:7])]
             selection = '(' + ' or '.join(selection) + ')'
             self.cmd.pair_fit(new_object_name + ' and (' + selection + ')', obj + ' and (' + selection + ')')
         self.cmd.orient(SELECTION_NAME)
@@ -419,6 +418,7 @@ class Suns_search(Wizard):
         if(bondFlag == 1):
             dict = {'x' : []}
             # Get the atom info for the two atoms of the bond.
+            obj, unused = self.cmd.index("pk1")[0]
             self.cmd.iterate("pk1", 'x.append( (model,segi,chain,resn,resi,name,alt) )', space=dict)
             self.cmd.iterate("pk2", 'x.append( (model,segi,chain,resn,resi,name,alt) )', space=dict)
             bond = [dict['x'][0][5], dict['x'][1][5]]
@@ -434,14 +434,16 @@ class Suns_search(Wizard):
             if(key in BOND_WORD_DICT):
                 word = BOND_WORD_DICT[key]
                 # Now form a new key that has the current residue and the word.
-                key = tuple(list(dict['x'][0][0:5]) + [word])
+                key = tuple([obj] + list(dict['x'][0][0:5]) + [word])
                 if(key in self.word_list):
+                    # Disable the selection
                     del self.word_list[key]
                 else:
+                    # Enable the selection
                     if(key[1].strip() == ''):
-                        self.word_list[key] = '(model %s and chain %s and resn %s and resi %s and name %s )' % tuple(list(key[0:1]) + list(key[2:5]) + [WORDS_DICT[word][key[3]]])
+                        self.word_list[key] = '(object %s and model %s and chain %s and resn %s and resi %s and name %s )' % tuple(list(key[0:2]) + list(key[3:6]) + [WORDS_DICT[word][key[4]]])
                     else:
-                        self.word_list[key] = '(model %s and segi %s and chain %s and resn %s and resi %s and name %s )' % tuple(list(key[0:5]) + [WORDS_DICT[word][key[3]]])
+                        self.word_list[key] = '(object %s and model %s and segi %s and chain %s and resn %s and resi %s and name %s )' % tuple(list(key[0:6]) + [WORDS_DICT[word][key[4]]])
             #else: # If this isn't part of a word, we'll still let them select the bond.
             #    # If this bond isn't part of a word, then the key
             #    # will include the full identifier for the two atoms.

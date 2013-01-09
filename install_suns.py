@@ -144,7 +144,7 @@ class SearchThread(threading.Thread):
 # Wizard class
 class Suns_search(Wizard):
     '''
-    This class  will create the wizard for performing Suns searches.
+    This class will create the wizard for performing Suns searches.
     '''
     def __init__(self, _self=cmd):
         Wizard.__init__(self, _self)
@@ -240,17 +240,17 @@ class Suns_search(Wizard):
     def create_num_structures_menu(self):
         '''
         This method will create a wizard menu for the possible number of structures
-        to return.  Values range from 10 to 2000.
+        to return.  Values range from 10 to 2500.
         '''
         num_structures_menu = [[2, 'Number of Structures', '']]
         num_structures_menu.append([1, str(10) , 'cmd.get_wizard().set_num_structures(' + str(10) + ')'])
+        num_structures_menu.append([1, str(25) , 'cmd.get_wizard().set_num_structures(' + str(25) + ')'])
         num_structures_menu.append([1, str(50) , 'cmd.get_wizard().set_num_structures(' + str(50) + ')'])
         num_structures_menu.append([1, str(100) , 'cmd.get_wizard().set_num_structures(' + str(100) + ')'])
         num_structures_menu.append([1, str(250) , 'cmd.get_wizard().set_num_structures(' + str(250) + ')'])
         num_structures_menu.append([1, str(500) , 'cmd.get_wizard().set_num_structures(' + str(500) + ')'])
         num_structures_menu.append([1, str(1000) , 'cmd.get_wizard().set_num_structures(' + str(1000) + ')'])
-        num_structures_menu.append([1, str(1500) , 'cmd.get_wizard().set_num_structures(' + str(1500) + ')'])
-        num_structures_menu.append([1, str(2000) , 'cmd.get_wizard().set_num_structures(' + str(2000) + ')'])
+        num_structures_menu.append([1, str(2500) , 'cmd.get_wizard().set_num_structures(' + str(2500) + ')'])
         
         return num_structures_menu
     

@@ -15,6 +15,7 @@ BOND_WORD_DICT = {('PRO', 'CB', 'CG'): 'proline', ('ILE', 'C', 'O'): 'peptide_bo
 SELECTION_NAME = 'query'
 RESULT_SUFFIX = 'result'
 FETCH_SUFFIX = 'full'
+SAVE_SUFFIX = 'save'
 
 SUNS_SERVER_ADDRESS = 'suns.degradolab.org'
 
@@ -54,9 +55,6 @@ class SearchThread(threading.Thread):
                     self.pdbs[pdbid] = 0
                 sele_name = pdbid + '_%04d_%s' % (self.pdbs[pdbid], RESULT_SUFFIX)
                 # Delete this object if it already exists for some reason
-                #while exists sele_name:
-                #    self.pdbs[pdbid] += 1
-                #    sele_name = pdbid + '_%04d_%s' % (self.pdbs[pdbid], RESULT_SUFFIX)
                 self.cmd.delete(sele_name)
                 # Load the structure into pymol.
                 self.cmd.read_pdbstr(body[5:], sele_name)
@@ -67,13 +65,6 @@ class SearchThread(threading.Thread):
                 self.stop()
             elif(body[0] == '3'):
                 print '[*] Error: ' + body[1:]
-    
-    def delete_current_results(self, exceptions = {}):
-        for pdbid in self.pdbs:
-            for i in range(self.pdbs[pdbid]):
-                sele_name = pdbid + '_%04d_%s' % (i, RESULT_SUFFIX)
-                if(sele_name not in exceptions):
-                    self.cmd.delete(sele_name)
     
     # Perform our search.
     def run(self):
@@ -353,38 +344,21 @@ class Suns_search(Wizard):
             self.cmd.pair_fit(new_object_name + ' and (' + selection + ')', obj + ' and (' + selection + ')')
         self.cmd.orient(SELECTION_NAME)
     
-    def delete_current_results(self, exceptions={}):
+    def delete_current_results(self):
         '''
         This method will ask the search thread (who knows all of the current
         results) to delete all results with the exception of any objects
         that are in the exceptions variable.
         '''
-        if(self.searchThread != None):
-            self.searchThread.delete_current_results(exceptions)
-    
-    def get_current_object_names(self, selectionName):
-        '''
-        This method will get all of the objects in the given selection.
-        It is used so that when we perform a new search, we first check to see
-        what objects are part of the search, and don't delete them.
-        '''
-        currentObjects = {}
-        dict = {'x' : []}
-        # Get the atom info for the two atoms of the bond.
-        self.cmd.iterate(selectionName, 'x.append( (model,segi,chain,resn,resi,name,alt) )', space=dict)
-        for a in dict['x']:
-            currentObjects[a[0]] = 1
-        
-        return currentObjects
+        self.cmd.delete('*_' + RESULT_SUFFIX)
     
     def launch_search(self):
         '''
         This method will actually launch the search.
         '''
         pdbstr = self.cmd.get_pdbstr(SELECTION_NAME)
-        exceptions = self.get_current_object_names(SELECTION_NAME)
         self.stop_search()
-        self.delete_current_results(exceptions)
+        self.delete_current_results()
         self.searchThread = SearchThread(self.rmsd_cutoff, self.number_of_structures, self.random_seed, pdbstr, self.suns_server_address, self.cmd)
         self.searchThread.start()
     
@@ -419,6 +393,13 @@ class Suns_search(Wizard):
             dict = {'x' : []}
             # Get the atom info for the two atoms of the bond.
             obj, unused = self.cmd.index("pk1")[0]
+            words = obj.split('_')
+            if(len(words) == 3 and words[2] == RESULT_SUFFIX):
+                del words[2]
+                words.append(SAVE_SUFFIX)
+                newObj = '_'.join(words)
+                self.cmd.set_name(obj, newObj)
+                obj = newObj
             self.cmd.iterate("pk1", 'x.append( (model,segi,chain,resn,resi,name,alt) )', space=dict)
             self.cmd.iterate("pk2", 'x.append( (model,segi,chain,resn,resi,name,alt) )', space=dict)
             bond = [dict['x'][0][5], dict['x'][1][5]]

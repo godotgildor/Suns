@@ -10,31 +10,38 @@ import Tkinter
 import tkSimpleDialog
 import tkMessageBox
 
+# The following two dictionaries are automatically generated from the motif
+# directories
 WORDS_DICT = {'lys_linker': {'LYS': 'CA+CB+CB+CG+CD+CG'}, 'ser_linker': {'SER': 'CA+CB'}, 'alanine': {'ALA': 'CA+CB'}, 'guanidinium': {'ARG': 'CD+NE+CZ+NH1+CZ+NE+CZ+NH2'}, 'glu_linker': {'GLU': 'CA+CB+CB+CG+CD+CG'}, 'valine': {'VAL': 'CB+CG2+CA+CB+CB+CG1'}, 'lys_end': {'LYS': 'CD+CE+CE+NZ'}, 'isoleucine': {'ILE': 'CD1+CG1+CB+CG1+CB+CG2+CA+CB'}, 'thr_linker': {'THR': 'CA+CB+CB+CG2'}, 'indole': {'TRP': 'CD1+CG+CD1+NE1+CD2+CG+CE2+NE1+CD2+CE3+CD2+CE2+CE3+CZ3+CE2+CZ2+CH2+CZ3+CH2+CZ2'}, 'asn_linker': {'ASN': 'CB+CG+CA+CB'}, 'trp_linker': {'TRP': 'CA+CB+CB+CG'}, 'arg_linker': {'ARG': 'CD+CG+CB+CG+CA+CB'}, 'leucine': {'LEU': 'CA+CB+CB+CG+CD2+CG+CD1+CG'}, 'phospho_thr': {'TPO': 'O2P+P+OG+P+O1P+P+O3P+P+O1P+O3P'}, 'phospho_his': {'HIP': 'O2P+P+OG+P+O1P+P+O3P+P+O1P+O3P'}, 'proline': {'PRO': 'CD+CG+CB+CG'}, 'imidazole': {'HIS': 'CD2+NE2+CE1+NE2+CD2+CG+CE1+ND1+CG+ND1'}, 'carboxyl': {'ASP': 'CG+OD2+CG+OD1', 'GLU': 'CD+OE2+CD+OE1'}, 'phospho_tyr': {'PTR': 'O2P+P+OG+P+O1P+P+O3P+P+O1P+O3P'}, 'phenyl': {'PHE': 'CD2+CE2+CD2+CG+CE2+CZ+CD1+CG+CE1+CZ+CD1+CE1', 'TYR': 'CE1+CZ+CD1+CE1+CE2+CZ+CD1+CG+CD2+CE2+CD2+CG'}, 'asp_linker': {'ASP': 'CB+CG+CA+CB'}, 'hydroxyl': {'SER': 'CB+OG', 'TYR': 'CZ+OH', 'THR': 'CB+OG1'}, 'gln_linker': {'GLN': 'CA+CB+CB+CG+CD+CG'}, 'phospho_asp': {'PHD': 'O2P+P+OG+P+O1P+P+O3P+P+O1P+O3P'}, 'phospho_ser': {'SEP': 'O2P+P+OG+P+O1P+P+O3P+P+O1P+O3P'}, 'tyr_linker': {'TYR': 'CA+CB+CB+CG'}, 'peptide_bond': {'CYS': 'CA+N+C+CA+C+O', 'GLN': 'CA+N+C+CA+C+O', 'HIS': 'CA+N+C+CA+C+O', 'SER': 'CA+N+C+CA+C+O', 'VAL': 'CA+N+C+CA+C+O', 'LYS': 'CA+N+C+CA+C+O', 'ILE': 'CA+N+C+CA+C+O', 'PRO': 'CA+N+C+CA+C+O', 'GLY': 'CA+N+C+CA+C+O', 'THR': 'CA+N+C+CA+C+O', 'PHE': 'CA+N+C+CA+C+O', 'ALA': 'CA+N+C+CA+C+O', 'MET': 'CA+N+C+CA+C+O', 'ASP': 'CA+N+C+CA+C+O', 'GLU': 'CA+N+C+CA+C+O', 'LEU': 'CA+N+C+CA+C+O', 'ARG': 'CA+N+C+CA+C+O', 'TRP': 'CA+N+C+CA+C+O', 'ASN': 'CA+N+C+CA+C+O', 'TYR': 'CA+N+C+CA+C+O'}, 'carboxamide': {'ASN': 'CG+ND2+CG+OD1', 'GLN': 'CD+NE2+CD+OE1'}, 'phe_linker': {'PHE': 'CA+CB+CB+CG'}, 'cysteine': {'CYS': 'CA+CB+CB+SG'}, 'met_linker': {'MET': 'CA+CB+CB+CG'}, 'his_linker': {'HIS': 'CB+CG+CA+CB'}, 'met_end': {'MET': 'CE+SD+CG+SD'}}
 BOND_WORD_DICT = {('PRO', 'CB', 'CG'): 'proline', ('ILE', 'C', 'O'): 'peptide_bond', ('TRP', 'CE2', 'NE1'): 'indole', ('ARG', 'CZ', 'NH1'): 'guanidinium', ('LYS', 'C', 'CA'): 'peptide_bond', ('TPO', 'O2P', 'P'): 'phospho_thr', ('HIP', 'O3P', 'P'): 'phospho_his', ('GLY', 'CA', 'N'): 'peptide_bond', ('ARG', 'CZ', 'NE'): 'guanidinium', ('ARG', 'C', 'CA'): 'peptide_bond', ('TYR', 'CA', 'N'): 'peptide_bond', ('TYR', 'CD2', 'CG'): 'phenyl', ('VAL', 'C', 'CA'): 'peptide_bond', ('SEP', 'O2P', 'P'): 'phospho_ser', ('TPO', 'O1P', 'O3P'): 'phospho_thr', ('GLY', 'C', 'CA'): 'peptide_bond', ('GLU', 'CD', 'CG'): 'glu_linker', ('TRP', 'CD1', 'NE1'): 'indole', ('TRP', 'CD2', 'CE2'): 'indole', ('ASP', 'C', 'CA'): 'peptide_bond', ('ILE', 'CB', 'CG1'): 'isoleucine', ('ASN', 'C', 'CA'): 'peptide_bond', ('MET', 'CB', 'CG'): 'met_linker', ('HIP', 'O2P', 'P'): 'phospho_his', ('PHE', 'CE1', 'CZ'): 'phenyl', ('PRO', 'C', 'CA'): 'peptide_bond', ('PHE', 'CE2', 'CZ'): 'phenyl', ('TYR', 'CA', 'CB'): 'tyr_linker', ('PHE', 'C', 'O'): 'peptide_bond', ('GLN', 'CD', 'NE2'): 'carboxamide', ('HIS', 'CG', 'ND1'): 'imidazole', ('SEP', 'O1P', 'P'): 'phospho_ser', ('PHE', 'CD1', 'CE1'): 'phenyl', ('PTR', 'O1P', 'O3P'): 'phospho_tyr', ('SEP', 'OG', 'P'): 'phospho_ser', ('ALA', 'CA', 'N'): 'peptide_bond', ('LEU', 'C', 'CA'): 'peptide_bond', ('THR', 'CB', 'OG1'): 'hydroxyl', ('ASP', 'CG', 'OD1'): 'carboxyl', ('PHD', 'O3P', 'P'): 'phospho_asp', ('LYS', 'CA', 'CB'): 'lys_linker', ('MET', 'C', 'O'): 'peptide_bond', ('TRP', 'CD2', 'CG'): 'indole', ('HIS', 'CB', 'CG'): 'his_linker', ('MET', 'CG', 'SD'): 'met_end', ('ARG', 'C', 'O'): 'peptide_bond', ('TRP', 'CA', 'CB'): 'trp_linker', ('ARG', 'CB', 'CG'): 'arg_linker', ('PTR', 'O3P', 'P'): 'phospho_tyr', ('LEU', 'CD1', 'CG'): 'leucine', ('SEP', 'O3P', 'P'): 'phospho_ser', ('MET', 'CA', 'CB'): 'met_linker', ('TYR', 'CD1', 'CE1'): 'phenyl', ('ALA', 'CA', 'CB'): 'alanine', ('GLU', 'CD', 'OE1'): 'carboxyl', ('PHE', 'CD1', 'CG'): 'phenyl', ('THR', 'CA', 'N'): 'peptide_bond', ('TYR', 'CZ', 'OH'): 'hydroxyl', ('ASP', 'CA', 'CB'): 'asp_linker', ('THR', 'CA', 'CB'): 'thr_linker', ('TRP', 'CA', 'N'): 'peptide_bond', ('SER', 'C', 'CA'): 'peptide_bond', ('ASP', 'CA', 'N'): 'peptide_bond', ('MET', 'CA', 'N'): 'peptide_bond', ('TRP', 'CH2', 'CZ2'): 'indole', ('ILE', 'CA', 'CB'): 'isoleucine', ('LYS', 'CD', 'CG'): 'lys_linker', ('PRO', 'CD', 'CG'): 'proline', ('GLU', 'C', 'O'): 'peptide_bond', ('TRP', 'CH2', 'CZ3'): 'indole', ('TPO', 'O1P', 'P'): 'phospho_thr', ('ILE', 'CA', 'N'): 'peptide_bond', ('CYS', 'C', 'CA'): 'peptide_bond', ('LYS', 'CD', 'CE'): 'lys_end', ('GLY', 'C', 'O'): 'peptide_bond', ('CYS', 'CA', 'CB'): 'cysteine', ('MET', 'C', 'CA'): 'peptide_bond', ('VAL', 'CA', 'N'): 'peptide_bond', ('THR', 'CB', 'CG2'): 'thr_linker', ('LEU', 'CA', 'CB'): 'leucine', ('ASP', 'C', 'O'): 'peptide_bond', ('LEU', 'CB', 'CG'): 'leucine', ('PRO', 'C', 'O'): 'peptide_bond', ('PHD', 'O1P', 'P'): 'phospho_asp', ('PHE', 'C', 'CA'): 'peptide_bond', ('ARG', 'CZ', 'NH2'): 'guanidinium', ('TYR', 'CB', 'CG'): 'tyr_linker', ('TYR', 'CE1', 'CZ'): 'phenyl', ('TYR', 'CE2', 'CZ'): 'phenyl', ('VAL', 'CB', 'CG2'): 'valine', ('LEU', 'C', 'O'): 'peptide_bond', ('LEU', 'CA', 'N'): 'peptide_bond', ('VAL', 'CA', 'CB'): 'valine', ('GLU', 'CA', 'N'): 'peptide_bond', ('LYS', 'C', 'O'): 'peptide_bond', ('SER', 'C', 'O'): 'peptide_bond', ('PTR', 'O2P', 'P'): 'phospho_tyr', ('GLU', 'CA', 'CB'): 'glu_linker', ('GLU', 'CB', 'CG'): 'glu_linker', ('GLN', 'CA', 'N'): 'peptide_bond', ('PHE', 'CD2', 'CG'): 'phenyl', ('TYR', 'C', 'CA'): 'peptide_bond', ('HIS', 'CA', 'CB'): 'his_linker', ('PTR', 'O1P', 'P'): 'phospho_tyr', ('TRP', 'CE2', 'CZ2'): 'indole', ('ASN', 'CG', 'OD1'): 'carboxamide', ('HIS', 'CA', 'N'): 'peptide_bond', ('ILE', 'CB', 'CG2'): 'isoleucine', ('HIS', 'CD2', 'NE2'): 'imidazole', ('TRP', 'CD2', 'CE3'): 'indole', ('ALA', 'C', 'CA'): 'peptide_bond', ('LEU', 'CD2', 'CG'): 'leucine', ('TRP', 'C', 'CA'): 'peptide_bond', ('GLN', 'CA', 'CB'): 'gln_linker', ('GLN', 'CB', 'CG'): 'gln_linker', ('HIP', 'OG', 'P'): 'phospho_his', ('THR', 'C', 'O'): 'peptide_bond', ('HIS', 'C', 'O'): 'peptide_bond', ('TRP', 'CD1', 'CG'): 'indole', ('ILE', 'C', 'CA'): 'peptide_bond', ('SER', 'CA', 'N'): 'peptide_bond', ('GLU', 'C', 'CA'): 'peptide_bond', ('GLN', 'C', 'CA'): 'peptide_bond', ('SEP', 'O1P', 'O3P'): 'phospho_ser', ('CYS', 'C', 'O'): 'peptide_bond', ('SER', 'CB', 'OG'): 'hydroxyl', ('HIS', 'CE1', 'NE2'): 'imidazole', ('PHE', 'CA', 'N'): 'peptide_bond', ('HIP', 'O1P', 'P'): 'phospho_his', ('ASP', 'CG', 'OD2'): 'carboxyl', ('ASN', 'CB', 'CG'): 'asn_linker', ('LYS', 'CE', 'NZ'): 'lys_end', ('CYS', 'CB', 'SG'): 'cysteine', ('VAL', 'CB', 'CG1'): 'valine', ('TYR', 'C', 'O'): 'peptide_bond', ('TPO', 'OG', 'P'): 'phospho_thr', ('VAL', 'C', 'O'): 'peptide_bond', ('HIP', 'O1P', 'O3P'): 'phospho_his', ('ARG', 'CD', 'NE'): 'guanidinium', ('ALA', 'C', 'O'): 'peptide_bond', ('LYS', 'CB', 'CG'): 'lys_linker', ('GLU', 'CD', 'OE2'): 'carboxyl', ('TPO', 'O3P', 'P'): 'phospho_thr', ('PHD', 'O2P', 'P'): 'phospho_asp', ('PHE', 'CA', 'CB'): 'phe_linker', ('ASN', 'CG', 'ND2'): 'carboxamide', ('HIS', 'CD2', 'CG'): 'imidazole', ('PHE', 'CD2', 'CE2'): 'phenyl', ('PRO', 'CA', 'N'): 'peptide_bond', ('ASN', 'C', 'O'): 'peptide_bond', ('ARG', 'CD', 'CG'): 'arg_linker', ('ARG', 'CA', 'N'): 'peptide_bond', ('TRP', 'CB', 'CG'): 'trp_linker', ('PHE', 'CB', 'CG'): 'phe_linker', ('HIS', 'C', 'CA'): 'peptide_bond', ('PHD', 'OG', 'P'): 'phospho_asp', ('MET', 'CE', 'SD'): 'met_end', ('GLN', 'C', 'O'): 'peptide_bond', ('HIS', 'CE1', 'ND1'): 'imidazole', ('CYS', 'CA', 'N'): 'peptide_bond', ('TRP', 'CE3', 'CZ3'): 'indole', ('TYR', 'CD2', 'CE2'): 'phenyl', ('ILE', 'CD1', 'CG1'): 'isoleucine', ('PTR', 'OG', 'P'): 'phospho_tyr', ('TRP', 'C', 'O'): 'peptide_bond', ('LYS', 'CA', 'N'): 'peptide_bond', ('TYR', 'CD1', 'CG'): 'phenyl', ('GLN', 'CD', 'CG'): 'gln_linker', ('ARG', 'CA', 'CB'): 'arg_linker', ('ASN', 'CA', 'N'): 'peptide_bond', ('SER', 'CA', 'CB'): 'ser_linker', ('GLN', 'CD', 'OE1'): 'carboxamide', ('PHD', 'O1P', 'O3P'): 'phospho_asp', ('THR', 'C', 'CA'): 'peptide_bond', ('ASN', 'CA', 'CB'): 'asn_linker', ('ASP', 'CB', 'CG'): 'asp_linker'}
-SELECTION_NAME = 'query'
-RESULT_SUFFIX = 'result'
-FETCH_SUFFIX = 'full'
-SAVE_SUFFIX = 'save'
 
-SUNS_SERVER_ADDRESS = 'suns.degradolab.org'
+SELECTION_NAME = 'query'  # The name for the query selection
+
+# The following values namespace the auto-generated selections
+RESULT_SUFFIX  = 'result' # The suffix for each search result
+FETCH_SUFFIX   = 'full'   # The suffix for each fetched context
+SAVE_SUFFIX    = 'save'   # The suffix for saved results
+
+SUNS_SERVER_ADDRESS = 'suns.degradolab.org' # The default message queue host
 
 class SearchThread(threading.Thread):
-    def __init__(self, rmsd, num_structures, random_seed, pdbstrs, server_address, cmd):
+    def __init__(
+            self, rmsd, num_struct, random_seed, pdbstrs, server_address, cmd ):
         threading.Thread.__init__(self)
         self.request = json.dumps({
             'rmsd_cutoff'   : rmsd,
-            'num_structures': num_structures,
+            'num_structures': num_struct,
             'random_seed'   : random_seed,
             'atoms'         : pdbstrs
         })
         self.cmd = cmd
         self.channel = None
-        self.callback_queue = None
-        self.pdbs = {}
-        self.suns_server_address = server_address
-        self.begun = False
-        self.ended = False
+        self.pdbs = {} # Tracks results to avoid duplicate generated names
+        self.suns_server_address = server_address # Currently selected host
+        self.begun = False # True once the thread begins consuming
+        self.ended = False # True once the thread finishes consuming
+        
+         # This guards the 'begun' and 'end' variables
         self.lock = threading.Lock()
     
     def handle_delivery(self, channel, method_frame, header_frame, body, corr_id=None):
@@ -82,14 +89,15 @@ class SearchThread(threading.Thread):
                 # Queue Initialization
                 result = self.channel.queue_declare(exclusive=True)
                 try:
-                    self.callback_queue = result.method.queue
-                    self.channel.queue_bind(exchange='suns-exchange-responses', queue = self.callback_queue, routing_key=self.callback_queue)
-                    self.channel.basic_consume(lambda c, m, h, b : self.handle_delivery(c, m, h, b, corr_id), no_ack=True, queue=self.callback_queue)
+                    # Auto-generates an anonymous queue name
+                    callback_queue = result.method.queue
+                    self.channel.queue_bind(exchange='suns-exchange-responses', queue = callback_queue, routing_key=callback_queue)
+                    self.channel.basic_consume(lambda c, m, h, b : self.handle_delivery(c, m, h, b, corr_id), no_ack=True, queue=callback_queue)
                     
                     # Send Request
                     print '[*] Waiting for Server...'
                     self.channel.basic_publish(exchange = 'suns-exchange-requests', routing_key = '1.0.0',
-                                          properties=BasicProperties(reply_to = self.callback_queue, correlation_id = corr_id ),
+                                          properties=BasicProperties(reply_to = callback_queue, correlation_id = corr_id ),
                                           body = self.request)
                     
                     # This call is a blocking call.  It will block until channel.stop_consuming is called.
@@ -117,7 +125,7 @@ class SearchThread(threading.Thread):
                             self.lock.release()
                         self.cmd.orient(SELECTION_NAME)
                 finally:
-                    self.channel.queue_delete(queue=self.callback_queue)
+                    self.channel.queue_delete(queue=callback_queue)
             finally:
                 connection.close()
         except socket.error:

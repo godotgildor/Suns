@@ -165,7 +165,10 @@ class SearchThread(threading.Thread):
                         #     stop() signal after done consuming.  Pika does not
                         #     expose a good way to release the lock immediately
                         #     after beginning consuming or to acquire the lock
-                        #     immediately before done consuming
+                        #     immediately before done consuming.
+                        #
+                        # The chance of triggering this race condition is very
+                        # low and the user can fix it by restarting the wizard
                         if (not ended):
                             # This call is a blocking call.
                             # It blocks until channel.stop_consuming is called.
@@ -200,30 +203,44 @@ class SearchThread(threading.Thread):
         finally:
             self.lock.release()
 
+# This wizard requires the ability to select bonds instead of atoms, since all
+# motifs are defined by bonds.  The only way I know how to do that is to
+# override Python's "PkTB" input.
 class Suns_search(Wizard):
     '''
     This class  will create the wizard for performing Suns searches.
     '''
     def __init__(self, _self = cmd):
         Wizard.__init__(self, _self)
-        self.cmd.unpick()
+        self.cmd.unpick() # Remove pk1, pk2
         self.word_list = {}
         self.current_selection = ''
         self.rmsd_cutoff = 1.0
         self.random_seed = 0
         self.number_of_structures = 100
         self.searchThread = None
+        
+        # Rebind left click to select bonds.  I choose left click since it is
+        # the most portable input method across devices, especially laptops, and
+        # also because the user definitely does not need the old left click
+        # function for the duration of the wizard.
+        self.cmd.button('single_left', 'None', 'PkTB')
+        
+        # PyMOL has this really obscure and undocumented 'auto_hide_selections'
+        # setting that auto hides selections when using editing commands.  This
+        # wizard overrides "PkTB", which is one of those editing commands, but
+        # we still want to display selections to the user, so we must disable
+        # this setting.
         self.prev_auto_hide_setting = self.cmd.get('auto_hide_selections')
         self.cmd.set('auto_hide_selections',0)
-        self.cmd.button('single_left', 'None', 'PkTB')
+        
         self.do_select(SELECTION_NAME, 'none')
         self.suns_server_address = SUNS_SERVER_ADDRESS
         self.prompt = ['Select motifs using left click']
     
     def cleanup(self):
         '''
-        Once we are done with the wizard, we should set various pymol
-        parameters back to their original values.
+        Try to restore PyMOL to the way we found it, within reason
         '''
         self.stop_search()
         
@@ -231,6 +248,11 @@ class Suns_search(Wizard):
         # of this button setting so that I can restore the original value.  For
         # now I assume that the user was in a viewing mode, where the default
         # behavior for left click is '+/-'.
+        #
+        # Very few users use anything other than viewing mode, especially in
+        # conjunction with searching.  Also, users can fix the mistaken
+        # reversion by cycling through mouse button modes, which will properly
+        # reset the action for single left click.
         self.cmd.button('single_left', 'None', '+/-')
         
         self.cmd.set('auto_hide_selections', self.prev_auto_hide_setting)
@@ -417,6 +439,7 @@ class Suns_search(Wizard):
     
     def delete_full(self):
         self.cmd.delete('*_' + FETCH_SUFFIX)
+
     def launch_search(self):
         '''
         This method will actually launch the search.

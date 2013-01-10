@@ -298,9 +298,11 @@ class Suns_search(Wizard):
             [ 3, 'Cap: ' + str(self.number_of_structures) + ' results', 'num_structures'],
             [ 3, 'Order: ' + {True: 'Random (Seed = %d' % self.random_seed + ')', False: 'Default'}[self.random_seed != 0], 'random_seed'],
             [ 3, 'Server: ' + self.suns_server_address, 'server'],
-            [ 2, 'Clear Results', 'cmd.get_wizard().delete_current_results()'],
+            [ 2, 'Clear Results', 'cmd.get_wizard().delete_results()'],
             [ 2, 'Clear Selection','cmd.get_wizard().clear_selection()'],
+            [ 2, 'Clear Saved', 'cmd.get_wizard().delete_saved()'],
             [ 2, 'Fetch Full Contexts','cmd.get_wizard().fetch_full_context()'],
+            [ 2, 'Clear Contexts','cmd.get_wizard().delete_full()'],
             [ 2, 'Done','cmd.set_wizard()'] ]
     
     def fetch_full_context(self):
@@ -344,21 +346,21 @@ class Suns_search(Wizard):
             self.cmd.pair_fit(new_object_name + ' and (' + selection + ')', obj + ' and (' + selection + ')')
         self.cmd.orient(SELECTION_NAME)
     
-    def delete_current_results(self):
-        '''
-        This method will ask the search thread (who knows all of the current
-        results) to delete all results with the exception of any objects
-        that are in the exceptions variable.
-        '''
+    def delete_results(self):
         self.cmd.delete('*_' + RESULT_SUFFIX)
     
+    def delete_saved(self):
+        self.cmd.delete('*_' + SAVE_SUFFIX)
+    
+    def delete_full(self):
+        self.cmd.delete('*_' + FETCH_SUFFIX)
     def launch_search(self):
         '''
         This method will actually launch the search.
         '''
         pdbstr = self.cmd.get_pdbstr(SELECTION_NAME)
         self.stop_search()
-        self.delete_current_results()
+        self.delete_results()
         self.searchThread = SearchThread(self.rmsd_cutoff, self.number_of_structures, self.random_seed, pdbstr, self.suns_server_address, self.cmd)
         self.searchThread.start()
     
@@ -381,6 +383,9 @@ class Suns_search(Wizard):
         if(selection_logic != ''):
             self.cmd.select(name, selection_logic)
             self.cmd.enable(name)
+        else:
+            self.cmd.select(name, 'none')
+            self.cmd.disable(name)
             
     def do_pick(self, bondFlag):
         '''
@@ -421,7 +426,7 @@ class Suns_search(Wizard):
                     del self.word_list[key]
                 else:
                     # Enable the selection
-                    if(key[1].strip() == ''):
+                    if(key[2].strip() == ''):
                         self.word_list[key] = '(object %s and model %s and chain %s and resn %s and resi %s and name %s )' % tuple(list(key[0:2]) + list(key[3:6]) + [WORDS_DICT[word][key[4]]])
                     else:
                         self.word_list[key] = '(object %s and model %s and segi %s and chain %s and resn %s and resi %s and name %s )' % tuple(list(key[0:6]) + [WORDS_DICT[word][key[4]]])

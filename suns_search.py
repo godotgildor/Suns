@@ -41,11 +41,11 @@ class SearchThread(threading.Thread):
         # I don't know why, but I copy that practice as a defensive precaution,
         # assuming they have a good reason for doing that.
         self.cmd = cmd
-
+        
         self.channel = None # The AMQP Channel, unique per thread
         self.pdbs = {} # Tracks results to avoid duplicate generated names
         self.suns_server_address = server_address # Currently selected host
-
+        
         self.begun = False # True once the thread begins consuming
         self.ended = False # True once the thread finishes consuming
          # This guards the 'begun' and 'end' variables
@@ -59,7 +59,7 @@ class SearchThread(threading.Thread):
         if(corr_id == header_frame.correlation_id):
             # The inbound results don't use JSON, since there are a lot of them
             # and they tend to be small.
-
+            
             # Message format is a tagged union and the first character is the
             # tag:
             # 0 = No more search results:      Payload = Empty
@@ -203,21 +203,31 @@ class SearchThread(threading.Thread):
         finally:
             self.lock.release()
 
+
 # This wizard requires the ability to select bonds instead of atoms, since all
 # motifs are defined by bonds.  The only way I know how to do that is to
-# override Python's "PkTB" input.
+# override Python's "PkTB" input.  I document various vagaries of that in the
+# appropriate sections below.
 class Suns_search(Wizard):
-    '''
-    This class  will create the wizard for performing Suns searches.
-    '''
     def __init__(self, _self = cmd):
         Wizard.__init__(self, _self)
-        self.cmd.unpick() # Remove pk1, pk2
+        
+        # Clean the slate
+        self.cmd.unpick()        
+        self.do_select(SELECTION_NAME, 'none')
+        self.prompt = ['Select motifs using left click']
+        
+        # type Key = (Object, Model, Segi, Chain, Resn, Resi, Name)
+        # type Val = Selection corresponding to the key
+        # word_list :: Dict Key Val
         self.word_list = {}
-        self.current_selection = ''
+        
+        # Default values
         self.rmsd_cutoff = 1.0
         self.random_seed = 0
         self.number_of_structures = 100
+        self.suns_server_address = SUNS_SERVER_ADDRESS
+        
         self.searchThread = None
         
         # Rebind left click to select bonds.  I choose left click since it is
@@ -233,15 +243,8 @@ class Suns_search(Wizard):
         # this setting.
         self.prev_auto_hide_setting = self.cmd.get('auto_hide_selections')
         self.cmd.set('auto_hide_selections',0)
-        
-        self.do_select(SELECTION_NAME, 'none')
-        self.suns_server_address = SUNS_SERVER_ADDRESS
-        self.prompt = ['Select motifs using left click']
     
     def cleanup(self):
-        '''
-        Try to restore PyMOL to the way we found it, within reason
-        '''
         self.stop_search()
         
         # This is a hack.  I don't yet know how to retrieve the previous value
@@ -259,41 +262,18 @@ class Suns_search(Wizard):
         self.cmd.delete(SELECTION_NAME)
     
     def set_rmsd(self, rmsd):
-        '''
-        This is the method that will be called once the user has
-        selected an rmsd cutoff via the wizard menu.
-        '''
         self.rmsd_cutoff = rmsd
         self.cmd.refresh_wizard()
     
     def set_num_structures(self, num_structures):
-        '''
-        This is the method that will be called once the user
-        has set the maximum number of structures to return.
-        '''
         self.number_of_structures = num_structures
         self.cmd.refresh_wizard()
     
-    def get_random_seed(self):
-        '''
-        This method will bring up a dialog box and prompt the user for
-        an integer to use as the random seed in shuffling the Suns database.
-        '''
-        import Tkinter
-        import tkSimpleDialog
-        random_seed = tkSimpleDialog.askstring('Randomize Order','Random Seed (Integer):')
-        return random_seed
-    
     def ask_random_seed(self, ask_for_random_seed):
-        ''' 
-        This method will be called when the user clicks on the wizard
-        menu to randomize the Suns database.  If the user selects
-        to randomize the db, then this method will call get_random_seed
-        to get the random seed for randomization.
-        '''
         if(ask_for_random_seed):
             try:
-                self.random_seed = int(self.get_random_seed())
+                self.random_seed = int(tkSimpleDialog.askstring(
+                    'Randomize Order','Random Seed (Integer):'))
             except:
                 self.random_seed = 0
         else:
@@ -301,71 +281,49 @@ class Suns_search(Wizard):
         self.cmd.refresh_wizard()
     
     def create_random_seed_menu(self):
-        '''
-        This method will create the Randomize Database menu.
-        '''
         random_seed_menu = [[2, 'Randomize Order', '']]
-        random_seed_menu.append([1, 'No', 'cmd.get_wizard().ask_random_seed(False)'])
-        random_seed_menu.append([1, 'Yes', 'cmd.get_wizard().ask_random_seed(True)'])
-        
+        random_seed_menu.append(
+            [1, 'No', 'cmd.get_wizard().ask_random_seed(False)'])
+        random_seed_menu.append(
+            [1, 'Yes', 'cmd.get_wizard().ask_random_seed(True)'])
         return random_seed_menu
         
     def create_rmsd_menu(self):
-        '''
-        This method will create a wizard menu for the possible RMSD cutoff values.
-        Currently the values range from 0.1 to 2 A RMSD.
-        '''
         rmsd_menu = [[2, 'RMSD Cutoff', '']]
         for rmsd_choice in range(1,21):
             rmsd = float(rmsd_choice) / 10.0
-            rmsd_menu.append([1, str(rmsd) , 'cmd.get_wizard().set_rmsd(' + str(rmsd) + ')'])
+            rmsd_menu.append(
+                [1, str(rmsd) , 'cmd.get_wizard().set_rmsd(' + str(rmsd) + ')'])
         return rmsd_menu
-
+    
     def create_num_structures_menu(self):
-        '''
-        This method will create a wizard menu for the possible number of structures
-        to return.  Values range from 10 to 2000.
-        '''
         num_structures_menu = [[2, 'Number of Results', '']]
         for n in [10, 20, 50, 100, 200, 500, 1000]:
-            num_structures_menu.append([1, str(n) , 'cmd.get_wizard().set_num_structures(' + str(n) + ')'])
-        
+            num_structures_menu.append(
+                [1, str(n), 'cmd.get_wizard().set_num_structures(' + str(n) + ')'])
         return num_structures_menu
     
     def create_server_address_menu(self):
-        '''
-        This method will create the Server Address menu.
-        '''
         server_address_menu = [[2, 'Server Address', '']]
-        server_address_menu.append([1, 'Default: ' + SUNS_SERVER_ADDRESS, 'cmd.get_wizard().set_server_address("' + SUNS_SERVER_ADDRESS + '")'])
-        server_address_menu.append([1, 'User defined', 'cmd.get_wizard().ask_server_address()'])
-        
+        server_address_menu.append(
+            [1, 'Default: ' + SUNS_SERVER_ADDRESS, 'cmd.get_wizard().set_server_address("' + SUNS_SERVER_ADDRESS + '")'])
+        server_address_menu.append(
+            [1, 'User defined', 'cmd.get_wizard().ask_server_address()'])
         return server_address_menu
         
     def set_server_address(self, server_address):
-        '''
-        This method will set the server address to use.
-        '''
         self.suns_server_address = server_address
         self.cmd.refresh_wizard()
         
     def ask_server_address(self):
-        '''
-        This method will bring up a dialog box and prompt the user for
-        the address to the Suns server.  This will allow the user to specify
-        an address.
-        '''
         try:
-            server_address = tkSimpleDialog.askstring('Suns server address','Suns server address:')
+            server_address = tkSimpleDialog.askstring(
+                'Suns server address','Suns server address:')
         except:
             server_address = SUNS_SERVER_ADDRESS
-        
         self.set_server_address(server_address)
     
     def get_panel(self):
-        '''
-        This is the wizard method that will create the main menu.
-        '''
         rmsd_menu = self.create_rmsd_menu()
         self.menu['rmsd'] = rmsd_menu
         num_structures_menu = self.create_num_structures_menu()
@@ -406,7 +364,7 @@ class Suns_search(Wizard):
         if(len(matches) > 1):
             if(not tkMessageBox.askyesno(
                 "Multiple Results Selected",
-                "Fetching multiple contexts takes time and will block PyMOL until complete.  Proceed?")):
+                "Fetching multiple contexts takes time and will block PyMOL until finished.  Proceed?")):
                 return;
         
         for obj in matches:
@@ -415,20 +373,27 @@ class Suns_search(Wizard):
             w.append(FETCH_SUFFIX)
             new_object_name = '_'.join(w)
             self.cmd.fetch(w[0], new_object_name)
-            dict = {'x' : []}
+            attr_dict = {'x' : []}
             # Get the atom info for the entire result, not just the part that
             # matched the query, in order to improve the alignment
-            self.cmd.iterate(obj, 'x.append( [model,segi,chain,resn,resi,name,alt] )', space=dict)
+            self.cmd.iterate(
+                obj,
+                'x.append( [model,segi,chain,resn,resi,name,alt] )',
+                space=attr_dict)
             selection = []
-            for item in dict['x']:
+            for item in attr_dict['x']:
                 altLoc = item[6]
                 # PyMOL chokes on empty arguments to 'alt'
                 if(altLoc.strip() == ''):
-                    selection += ['(chain %s and resn %s and resi %s and name %s)' % tuple(item[2:6])]
+                    selection += [
+                        '(chain %s and resn %s and resi %s and name %s)' % tuple(item[2:6])]
                 else:
-                    selection += ['(chain %s and resn %s and resi %s and name %s and alt %s)' % tuple(item[2:7])]
+                    selection += [
+                        '(chain %s and resn %s and resi %s and name %s and alt %s)' % tuple(item[2:7])]
             selection = '(' + ' or '.join(selection) + ')'
-            self.cmd.pair_fit(new_object_name + ' and (' + selection + ')', obj + ' and (' + selection + ')')
+            self.cmd.pair_fit(
+                new_object_name + ' and (' + selection + ')',
+                obj             + ' and (' + selection + ')')
         self.cmd.orient(SELECTION_NAME)
     
     def delete_results(self):
@@ -439,11 +404,8 @@ class Suns_search(Wizard):
     
     def delete_full(self):
         self.cmd.delete('*_' + FETCH_SUFFIX)
-
+    
     def launch_search(self):
-        '''
-        This method will actually launch the search.
-        '''
         pdbstr = self.cmd.get_pdbstr(SELECTION_NAME)
         self.stop_search()
         self.delete_results()
@@ -451,16 +413,15 @@ class Suns_search(Wizard):
         self.searchThread.start()
     
     def clear_selection(self):
-        '''
-        This method simply deletes the current selection.
-        '''
+        # Do not delete the selection, otherwise PyMOL will throw an exception
+        # when you try to search.  Instead, set it to the empty selection.
         self.word_list = {}
-        self.cmd.delete(SELECTION_NAME)
+        self.do_select(SELECTION_NAME, 'none')
     
     def cancel_search(self):
         if(self.searchThread is not None):
             self.searchThread.cancel_search()
-
+    
     def stop_search(self):
         if(self.searchThread is not None):
             self.searchThread.stop()
@@ -481,7 +442,7 @@ class Suns_search(Wizard):
         # I think bondFlag only = 1 if we are selecting bonds.
         # We are only accepting bond selections.
         if(bondFlag == 1):
-            dict = {'x' : []}
+            attr_dict = {'x' : []}
             # Get the atom info for the two atoms of the bond.
             obj, unused = self.cmd.index("pk1")[0]
             words = obj.split('_')
@@ -491,22 +452,22 @@ class Suns_search(Wizard):
                 newObj = '_'.join(words)
                 self.cmd.set_name(obj, newObj)
                 obj = newObj
-            self.cmd.iterate("pk1", 'x.append( (model,segi,chain,resn,resi,name,alt) )', space=dict)
-            self.cmd.iterate("pk2", 'x.append( (model,segi,chain,resn,resi,name,alt) )', space=dict)
-            bond = [dict['x'][0][5], dict['x'][1][5]]
+            self.cmd.iterate("pk1", 'x.append( (model,segi,chain,resn,resi,name,alt) )', space = attr_dict)
+            self.cmd.iterate("pk2", 'x.append( (model,segi,chain,resn,resi,name,alt) )', space = attr_dict)
+            bond = [attr_dict['x'][0][5], attr_dict['x'][1][5]]
             bond.sort()
             
             # We only handle bonds per residue, no residue spanning bonds.
-            if( (dict['x'][0][2] != dict['x'][1][2]) or (dict['x'][0][4] != dict['x'][1][4]) ):
+            if( (attr_dict['x'][0][2] != attr_dict['x'][1][2]) or (attr_dict['x'][0][4] != attr_dict['x'][1][4]) ):
                 return
             
             # The key is of the form (resn, atom0, atom1) where the atom names are in alphabetical order.
-            key = (dict['x'][0][3], bond[0], bond[1])
+            key = (attr_dict['x'][0][3], bond[0], bond[1])
             # Look up what word this bond is part of.
             if(key in BOND_WORD_DICT):
                 word = BOND_WORD_DICT[key]
                 # Now form a new key that has the current residue and the word.
-                key = tuple([obj] + list(dict['x'][0][0:5]) + [word])
+                key = tuple([obj] + list(attr_dict['x'][0][0:5]) + [word])
                 if(key in self.word_list):
                     # Disable the selection
                     del self.word_list[key]
@@ -523,15 +484,14 @@ class Suns_search(Wizard):
             #    # we'll know it's the same thing.  For now, I'll just sort on the atom name.
             #    # This could cause a problem if the two atoms have the same name, but really,
             #    # should a bond have two atoms of the same name?
-            #    if(dict['x'][0][5] < dict['x'][1][5]):
-            #        key = tuple(list(dict['x'][0][0:6]) + list(dict['x'][1][0:6]))
+            #    if(attr_dict['x'][0][5] < attr_dict['x'][1][5]):
+            #        key = tuple(list(attr_dict['x'][0][0:6]) + list(attr_dict['x'][1][0:6]))
             #    else:
-            #        key = tuple(list(dict['x'][1][0:6]) + list(dict['x'][0][0:6]))
+            #        key = tuple(list(attr_dict['x'][1][0:6]) + list(attr_dict['x'][0][0:6]))
             #    if(key in self.word_list):
             #        del self.word_list[key]
             #    else:
             #        self.word_list[key] = '((model %s and segi %s and chain %s and resn %s and resi %s and name %s) or (model %s and segi %s and chain %s and resn %s and resi %s and name %s) )' % key
         
         self.cmd.unpick()
-        self.current_selection = ' or '.join(self.word_list.values()).strip()
-        self.do_select(SELECTION_NAME, self.current_selection)
+        self.do_select(SELECTION_NAME, ' or '.join(self.word_list.values()).strip())

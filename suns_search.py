@@ -17,7 +17,10 @@ BOND_WORD_DICT = {('PRO', 'CB', 'CG'): 'proline', ('ILE', 'C', 'O'): 'peptide_bo
 
 SELECTION_NAME = 'query'  # The name for the query selection
 
-# The following values namespace the auto-generated selections
+# The following suffixes namespace the auto-generated objects.
+# The Suns client reserves the right to freely delete anything unexpected within
+# the following namespaces so that automated PyMOL clients can safely use these
+# namespaces.
 RESULT_SUFFIX  = 'result' # The suffix for each search result
 FETCH_SUFFIX   = 'full'   # The suffix for each fetched context
 SAVE_SUFFIX    = 'save'   # The suffix for saved results
@@ -34,73 +37,121 @@ class SearchThread(threading.Thread):
             'random_seed'   : random_seed,
             'atoms'         : pdbstrs
         })
+        # All PyMOL routines keep their own copy of the 'cmd' object.
+        # I don't know why, but I copy that practice as a defensive precaution,
+        # assuming they have a good reason for doing that.
         self.cmd = cmd
-        self.channel = None
+
+        self.channel = None # The AMQP Channel, unique per thread
         self.pdbs = {} # Tracks results to avoid duplicate generated names
         self.suns_server_address = server_address # Currently selected host
+
         self.begun = False # True once the thread begins consuming
         self.ended = False # True once the thread finishes consuming
-        
          # This guards the 'begun' and 'end' variables
         self.lock = threading.Lock()
     
-    def handle_delivery(self, channel, method_frame, header_frame, body, corr_id=None):
+    def handle_delivery(
+            self, channel, method_frame, header_frame, body, corr_id = None ):
+        # Ignore messages with the wrong correlation ID so that we don't
+        # contaminate the current results with results from an aborted previous
+        # query
         if(corr_id == header_frame.correlation_id):
-            # TODO Consider changing to JSON in the future.
-            # The first byte is the status.
-            # 0 = No more search results
-            # 1 = Search result: Body = PDB ID + PDB structure
-            # 2 = Search time limit exceeded
-            # 3 = Error: Body = message
-            if(body[0] == '0'):
+            # The inbound results don't use JSON, since there are a lot of them
+            # and they tend to be small.
+
+            # Message format is a tagged union and the first character is the
+            # tag:
+            # 0 = No more search results:      Payload = Empty
+            # 1 = Search result:               Payload = PDB ID + PDB structure
+            # 2 = Search time limit exceeded:  Payload = Empty
+            # 3 = Error:                       Payload = message
+            tag = body[0]
+            if(tag == '0'):
                 print '[*] Search done'
                 self.stop()
-            elif(body[0] == '1'):
-                # The next 4 bytes are the pdbid.
+            elif(tag == '1'):
+                # The first 4 bytes of the payload are the PDB ID code
                 pdbid = body[1:5]
                 if(pdbid not in self.pdbs):
                     self.pdbs[pdbid] = 0
-                sele_name = pdbid + '_%04d_%s' % (self.pdbs[pdbid], RESULT_SUFFIX)
-                # Delete this object if it already exists for some reason
+                sele_name = (
+                    pdbid + '_%04d_%s' % (self.pdbs[pdbid], RESULT_SUFFIX))
+                
+                # If there is an existing result of the same name, delete it,
+                # otherwise PyMOL will load the new result as an additional
+                # model to the existing result.
+                #
+                # In principle there should never be an existing selection with
+                # the same name since the client either migrates old results to
+                # the <SAVE_SUFFIX> namespace or deletes unsaved ones when
+                # launching a new search.  However, this is just a precaution in
+                # case something goes wrong.
                 self.cmd.delete(sele_name)
+                
                 # Load the structure into pymol.
                 self.cmd.read_pdbstr(body[5:], sele_name)
-                # Increment the number of results for this pdbid
                 self.pdbs[pdbid] += 1
-            elif(body[0] == '2'):
+            elif(tag == '2'):
                 print '[*] Time limit exceeded'
                 self.stop()
-            elif(body[0] == '3'):
+            elif(tag == '3'):
                 print '[*] Error: ' + body[1:]
+            else:
+                print '[*] Error: Invalid Server Response'
+                print '[*] Response = \'' + body + '\''
     
-    # Perform our search.
+    # Send a search request and await results
     def run(self):
+        # This correlation ID ensures that each thread does not receive results
+        # from previous search requests that prematurely aborted
         corr_id = str(uuid.uuid4())
+        
         credentials = PlainCredentials('suns-client', 'suns-client')
         try:
             # Connection initialization
-            connection = BlockingConnection(ConnectionParameters(host=self.suns_server_address, credentials=credentials, virtual_host='suns-vhost'))
+            connection = BlockingConnection(
+                ConnectionParameters(
+                    host = self.suns_server_address,
+                    credentials = credentials,
+                    virtual_host = 'suns-vhost'))
             try:
                 # Channel Initialization
                 self.channel = connection.channel()
-                self.channel.exchange_declare(exchange='suns-exchange-responses', passive=True, durable=True)
-                self.channel.exchange_declare(exchange='suns-exchange-requests' , passive=True, durable=True)
+                self.channel.exchange_declare(
+                    exchange = 'suns-exchange-responses',
+                    passive = True,
+                    durable = True)
+                self.channel.exchange_declare(
+                    exchange = 'suns-exchange-requests',
+                    passive = True,
+                    durable = True)
                 
                 # Queue Initialization
-                result = self.channel.queue_declare(exclusive=True)
+                result = self.channel.queue_declare(exclusive = True)
                 try:
                     # Auto-generates an anonymous queue name
                     callback_queue = result.method.queue
-                    self.channel.queue_bind(exchange='suns-exchange-responses', queue = callback_queue, routing_key=callback_queue)
-                    self.channel.basic_consume(lambda c, m, h, b : self.handle_delivery(c, m, h, b, corr_id), no_ack=True, queue=callback_queue)
+                    self.channel.queue_bind(
+                        exchange = 'suns-exchange-responses',
+                        queue = callback_queue,
+                        routing_key = callback_queue)
+                    self.channel.basic_consume(
+                        lambda c, m, h, b :
+                            self.handle_delivery(c, m, h, b, corr_id),
+                        no_ack = True,
+                        queue = callback_queue)
                     
                     # Send Request
                     print '[*] Waiting for Server...'
-                    self.channel.basic_publish(exchange = 'suns-exchange-requests', routing_key = '1.0.0',
-                                          properties=BasicProperties(reply_to = callback_queue, correlation_id = corr_id ),
-                                          body = self.request)
+                    self.channel.basic_publish(
+                        exchange = 'suns-exchange-requests',
+                        routing_key = '1.0.0',
+                        properties = BasicProperties(
+                            reply_to = callback_queue,
+                            correlation_id = corr_id),
+                        body = self.request)
                     
-                    # This call is a blocking call.  It will block until channel.stop_consuming is called.
                     try:
                         self.lock.acquire()
                         try:
@@ -116,6 +167,8 @@ class SearchThread(threading.Thread):
                         #     after beginning consuming or to acquire the lock
                         #     immediately before done consuming
                         if (not ended):
+                            # This call is a blocking call.
+                            # It blocks until channel.stop_consuming is called.
                             self.channel.start_consuming()
                     finally:
                         self.lock.acquire()
@@ -125,11 +178,13 @@ class SearchThread(threading.Thread):
                             self.lock.release()
                         self.cmd.orient(SELECTION_NAME)
                 finally:
-                    self.channel.queue_delete(queue=callback_queue)
+                    self.channel.queue_delete(queue = callback_queue)
             finally:
                 connection.close()
         except socket.error:
-            print "[*] Error: Unable to connect to '" + self.suns_server_address + "'"
+            print ("[*] Error: Unable to connect to '"
+                 + self.suns_server_address
+                 + "'")
     
     def cancel_search(self):
         print '[*] Search cancelled'
@@ -139,7 +194,7 @@ class SearchThread(threading.Thread):
         self.lock.acquire()
         try:
             if(not self.ended):
-                if(self.begun):
+                if(self.begun): # The channel should not be None if begun = True
                     self.channel.stop_consuming()
                 self.ended = True
         finally:
@@ -149,7 +204,7 @@ class Suns_search(Wizard):
     '''
     This class  will create the wizard for performing Suns searches.
     '''
-    def __init__(self, _self=cmd):
+    def __init__(self, _self = cmd):
         Wizard.__init__(self, _self)
         self.cmd.unpick()
         self.word_list = {}
@@ -319,7 +374,7 @@ class Suns_search(Wizard):
         and then fetch and align the full structure so that the user can 
         see the full context of the match.
         '''
-        objs = self.cmd.get_names('objects', enabled_only=1)
+        objs = self.cmd.get_names('objects', enabled_only = 1)
         
         def match(objName):
             words = objName.split('_')

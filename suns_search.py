@@ -375,7 +375,7 @@ class Suns_search(Wizard):
             self.cmd.fetch(w[0], new_object_name)
             attr_dict = {'x' : []}
             # Get the atom info for the entire result, not just the part that
-            # matched the query, in order to improve the alignment
+            # matched the query, in order to improve the alignment.
             self.cmd.iterate(
                 obj,
                 'x.append( [model,segi,chain,resn,resi,name,alt] )',
@@ -391,11 +391,20 @@ class Suns_search(Wizard):
                     selection += [
                         '(chain %s and resn %s and resi %s and name %s and alt %s)' % tuple(item[2:7])]
             selection = '(' + ' or '.join(selection) + ')'
+            # Pair fit will choke if the number of atoms do not exactly match,
+            # so we must take extra care to make sure that we've exactly
+            # specified the atoms we want with our selection
             self.cmd.pair_fit(
                 new_object_name + ' and (' + selection + ')',
                 obj             + ' and (' + selection + ')')
         self.cmd.orient(SELECTION_NAME)
     
+    # Deletion is done entirely on the basis of reserved name spaces rather than
+    # tracking objects internally through stored variables.  This helps the user
+    # reason about how deletion works because they don't need to study the
+    # wizard's source code or simulate the wizard's internal state in their
+    # head.  If they are unsure about what state an object is in, they can
+    # simply inspect its suffix.
     def delete_results(self):
         self.cmd.delete('*_' + RESULT_SUFFIX)
     
@@ -409,7 +418,13 @@ class Suns_search(Wizard):
         pdbstr = self.cmd.get_pdbstr(SELECTION_NAME)
         self.stop_search()
         self.delete_results()
-        self.searchThread = SearchThread(self.rmsd_cutoff, self.number_of_structures, self.random_seed, pdbstr, self.suns_server_address, self.cmd)
+        self.searchThread = SearchThread(
+            self.rmsd_cutoff,
+            self.number_of_structures,
+            self.random_seed,
+            pdbstr,
+            self.suns_server_address,
+            self.cmd)
         self.searchThread.start()
     
     def clear_selection(self):
@@ -452,46 +467,38 @@ class Suns_search(Wizard):
                 newObj = '_'.join(words)
                 self.cmd.set_name(obj, newObj)
                 obj = newObj
-            self.cmd.iterate("pk1", 'x.append( (model,segi,chain,resn,resi,name,alt) )', space = attr_dict)
-            self.cmd.iterate("pk2", 'x.append( (model,segi,chain,resn,resi,name,alt) )', space = attr_dict)
+            self.cmd.iterate(
+                "pk1",
+                'x.append( (model,segi,chain,resn,resi,name,alt) )',
+                space = attr_dict)
+            self.cmd.iterate(
+                "pk2",
+                'x.append( (model,segi,chain,resn,resi,name,alt) )',
+                space = attr_dict)
             bond = [attr_dict['x'][0][5], attr_dict['x'][1][5]]
             bond.sort()
             
             # We only handle bonds per residue, no residue spanning bonds.
-            if( (attr_dict['x'][0][2] != attr_dict['x'][1][2]) or (attr_dict['x'][0][4] != attr_dict['x'][1][4]) ):
+            if( (attr_dict['x'][0][2] != attr_dict['x'][1][2])
+             or (attr_dict['x'][0][4] != attr_dict['x'][1][4]) ):
                 return
             
-            # The key is of the form (resn, atom0, atom1) where the atom names are in alphabetical order.
-            key = (attr_dict['x'][0][3], bond[0], bond[1])
+            # The bond key is of the form (resn, atom0, atom1) where the atom
+            # names are in alphabetical order.
+            bond_key = (attr_dict['x'][0][3], bond[0], bond[1])
             # Look up what word this bond is part of.
-            if(key in BOND_WORD_DICT):
-                word = BOND_WORD_DICT[key]
+            if(bond_key in BOND_WORD_DICT):
+                word = BOND_WORD_DICT[bond_key]
                 # Now form a new key that has the current residue and the word.
                 key = tuple([obj] + list(attr_dict['x'][0][0:5]) + [word])
                 if(key in self.word_list):
-                    # Disable the selection
+                    # Remove the motif from the selection
                     del self.word_list[key]
                 else:
-                    # Enable the selection
+                    # Add the motif to the selection
                     if(key[2].strip() == ''):
                         self.word_list[key] = '(object %s and model %s and chain %s and resn %s and resi %s and name %s )' % tuple(list(key[0:2]) + list(key[3:6]) + [WORDS_DICT[word][key[4]]])
                     else:
                         self.word_list[key] = '(object %s and model %s and segi %s and chain %s and resn %s and resi %s and name %s )' % tuple(list(key[0:6]) + [WORDS_DICT[word][key[4]]])
-            #else: # If this isn't part of a word, we'll still let them select the bond.
-            #    # If this bond isn't part of a word, then the key
-            #    # will include the full identifier for the two atoms.
-            #    # We should sort the atoms so that if the bond comes in as a,b or b,a
-            #    # we'll know it's the same thing.  For now, I'll just sort on the atom name.
-            #    # This could cause a problem if the two atoms have the same name, but really,
-            #    # should a bond have two atoms of the same name?
-            #    if(attr_dict['x'][0][5] < attr_dict['x'][1][5]):
-            #        key = tuple(list(attr_dict['x'][0][0:6]) + list(attr_dict['x'][1][0:6]))
-            #    else:
-            #        key = tuple(list(attr_dict['x'][1][0:6]) + list(attr_dict['x'][0][0:6]))
-            #    if(key in self.word_list):
-            #        del self.word_list[key]
-            #    else:
-            #        self.word_list[key] = '((model %s and segi %s and chain %s and resn %s and resi %s and name %s) or (model %s and segi %s and chain %s and resn %s and resi %s and name %s) )' % key
-        
         self.cmd.unpick()
         self.do_select(SELECTION_NAME, ' or '.join(self.word_list.values()).strip())

@@ -2,9 +2,9 @@ from pymol import cmd
 
 def __init__(self):
     self.menuBar.addmenuitem(
-        'Plugin',
+        'Wizard',
         'command',
-        label = 'Suns Search',
+        label = 'Search',
         command = lambda s=self:search() )
 
     def search():

@@ -4,8 +4,8 @@ all: installer debian
 VERSION := 1.0.0
 
 SRC_DIR := src
-PLUGIN := $(SRC)/suns_plugin.py
-WIZARD := $(SRC)/suns_search.py
+PLUGIN := $(SRC_DIR)/suns_plugin.py
+WIZARD := $(SRC_DIR)/suns_search.py
 PLUGIN_PATH:= /usr/lib/python2.7/dist-packages/pmg_tk/startup
 WIZARD_PATH:= /usr/lib/python2.7/dist-packages/pymol/wizard
 
@@ -34,8 +34,8 @@ $(BUILD_DIR)/$(INSTALLER):      \
 	    $(INSTALL_FOOTER) \
 	    >$(BUILD_DIR)/$(INSTALLER)
 
-DEBDIR := debian
-DEB_BUILD_DIR := $(DEBDIR)/build
+DEB_DIR := debian
+DEB_BUILD_DIR := $(DEB_DIR)/build
 DEB_NAME := pymol-suns-search
 DEB_VERSION := 1
 DEB_FULL := $(DEB_NAME)_$(VERSION)-$(DEB_VERSION)_all.deb
@@ -51,7 +51,7 @@ $(BUILD_DIR)/$(DEB_FULL):
 	cp $(PLUGIN) $(DEB_BUILD_DIR)$(PLUGIN_PATH)
 	cp $(WIZARD) $(DEB_BUILD_DIR)$(WIZARD_PATH)
 	cp $(DEB_DIR)/control $(DEB_BUILD_DIR)/DEBIAN/control
-	dpkg-deb --build $(BUILD_DIR)/$(DEB_FULL)
+	dpkg-deb --build $(DEB_BUILD_DIR) $(BUILD_DIR)/$(DEB_FULL)
 
 .PHONY: clean
 clean:

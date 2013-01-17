@@ -77,11 +77,10 @@ def get_pymol_paths():
     
     pymol_installations = filter(hasPyMOL, list(set(directories)))
     
-    if len(pymol_installations) == 0:
+    if   len(pymol_installations) < 1:
         tkMessageBox.showerror(title='Could not locate PyMOL', message='The Suns Installer could not detect a PyMOL installation on your computer.\n\nMake sure you have PyMOL installed.  If you do have PyMOL installed, contact the Suns maintainers at "suns.maintainers@gmail.com" to report this issue and tell them that the detected platform is "' + system + '"')
         sys.exit(1)
-    
-    if len(pymol_installations) > 0:
+    elif len(pymol_installations) > 1:
         root = Tk()
         store = {}
         
@@ -93,8 +92,10 @@ def get_pymol_paths():
         root.geometry("600x250+300+300")
         root.protocol("WM_DELETE_WINDOW", onClose)
         mainloop()
+        installation = store["installation"]
+    else:
+        installation = pymol_installations[0]
     
-    installation = store["installation"]
     return (installation + '/pymol/wizard', installation + '/pmg_tk/startup')
 
 
@@ -106,14 +107,14 @@ def main():
     try:
         open(wizard_file, 'w').write(SUNS_WIZARD_CODE)
     except:
-        tkMessageBox.showerror(title='Cannot install wizard', message='Suns cannot copy the PyMOL wizard to "%s".\n\nThe most likely reason is that you do not have permission to write to that folder.   If you do have sufficient permission, then contact the Suns maintainers at "suns.maintainers@gmail.com" to report this issue.' % os.path.join(wizard_path, SUNS_WIZARD_FN))
+        tkMessageBox.showerror(title='Cannot install wizard', message='Suns cannot copy the PyMOL wizard to "%s".\n\nThe most likely reason is that you do not have permission to write to that folder.   If you do have sufficient permission, then contact the Suns maintainers at "suns.maintainers@gmail.com" to report this issue.' % wizard_file)
         sys.exit(1)
     
     plugin_file = os.path.join(plugin_path, SUNS_PLUGIN_FN)
     try:
-        open(plugin_file, 'w').write(SUNS_PLUGIN_CODE % os.path.splitext(SUNS_WIZARD_FN)[0])
+        open(plugin_file, 'w').write(SUNS_PLUGIN_CODE)
     except:
-        tkMessageBox.showerror(title='Cannot install plugin loader', message='Suns cannot copy the PyMOL plugin loader to "%s".\n\nThe most likely reason is that you do not have permission to write to that folder.   If you do have sufficient permission, then contact the Suns maintainers at "suns.maintainers@gmail.com" to report this issue.' % os.path.join(wizard_path, SUNS_WIZARD_FN))
+        tkMessageBox.showerror(title='Cannot install plugin loader', message='Suns cannot copy the PyMOL plugin loader to "%s".\n\nThe most likely reason is that you do not have permission to write to that folder.   If you do have sufficient permission, then contact the Suns maintainers at "suns.maintainers@gmail.com" to report this issue.' % plugin_file)
         # Remove the wizard file as we probably don't want to have a half installed version lying around.
         os.remove(wizard_file)
         sys.exit(1)

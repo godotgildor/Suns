@@ -26,7 +26,7 @@ $(BUILD_DIR)/$(INSTALLER):      \
     $(INSTALL_MIDDLE) \
     $(PLUGIN)         \
     $(INSTALL_FOOTER)
-        mkdir -p $(BUILD_DIR)
+	mkdir -p $(BUILD_DIR)
 	cat $(INSTALL_HEADER) \
 	    $(WIZARD)         \
             $(INSTALL_MIDDLE) \
@@ -44,16 +44,16 @@ debian: $(BUILD_DIR)/$(DEB_FULL)
 .PHONY: debian
 
 $(BUILD_DIR)/$(DEB_FULL):
-    mkdir -p $(BUILD_DIR)                   \
-             $(DEB_BUILD_DIR)/DEBIAN        \
-             $(DEB_BUILD_DIR)$(PLUGIN_PATH) \
-             $(DEB_BUILD_DIR)$(WIZARD_PATH)
-    cp $(PLUGIN) $(DEB_BUILD_DIR)$(PLUGIN_PATH)
-    cp $(WIZARD) $(DEB_BUILD_DIR)$(WIZARD_PATH)
-    cp $(DEB_DIR)/control $(DEB_BUILD_DIR)/DEBIAN/control
-    dpkg-deb --build $(BUILD_DIR)/$(DEB_FULL)
+	mkdir -p $(BUILD_DIR)                   \
+	         $(DEB_BUILD_DIR)/DEBIAN        \
+	         $(DEB_BUILD_DIR)$(PLUGIN_PATH) \
+	         $(DEB_BUILD_DIR)$(WIZARD_PATH)
+	cp $(PLUGIN) $(DEB_BUILD_DIR)$(PLUGIN_PATH)
+	cp $(WIZARD) $(DEB_BUILD_DIR)$(WIZARD_PATH)
+	cp $(DEB_DIR)/control $(DEB_BUILD_DIR)/DEBIAN/control
+	dpkg-deb --build $(BUILD_DIR)/$(DEB_FULL)
 
 .PHONY: clean
 clean:
-    rm -rf $(DEB_BUILD_DIR)
-    rm -rf $(BUILD_DIR)
+	rm -rf $(DEB_BUILD_DIR)
+	rm -rf $(BUILD_DIR)

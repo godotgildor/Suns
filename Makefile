@@ -61,7 +61,7 @@ $(BUILD_DIR)/$(DEB_FULL): \
 	chmod 644 $(BUILD_DIR)/changelog.gz
 	cp $(BUILD_DIR)/changelog.gz $(DEB_BUILD_DIR)/$(DOC_PATH)
 	rm $(BUILD_DIR)/changelog.gz
-	ln -s $(DOC_PATH)/changelog.gz \
+	ln -fs $(DOC_PATH)/changelog.gz \
               $(DEB_BUILD_DIR)/$(DOC_PATH)/changelog.Debian.gz
 	find $(DEB_BUILD_DIR) -type d | xargs chmod 755
 	fakeroot dpkg-deb --build $(DEB_BUILD_DIR) $(BUILD_DIR)/$(DEB_FULL)

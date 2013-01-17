@@ -4,7 +4,7 @@ def __init__(self):
     self.menuBar.addmenuitem(
         'Wizard',
         'command',
-        label = 'Search',
+        label = 'Suns Search',
         command = lambda s=self:search() )
 
     def search():

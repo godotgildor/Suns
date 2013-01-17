@@ -237,6 +237,9 @@ class SearchThread(threading.Thread):
 # override Python's "PkTB" input.  I document various vagaries of that in the
 # appropriate sections below.
 class Suns_search(Wizard):
+    '''
+    This class  will create the wizard for performing Suns searches.
+    '''
     def __init__(self, _self = cmd):
         Wizard.__init__(self, _self)
         
@@ -273,6 +276,10 @@ class Suns_search(Wizard):
         self.cmd.set('auto_hide_selections',0)
     
     def cleanup(self):
+        '''
+        Once we are done with the wizard, we should set various pymol
+        parameters back to their original values.
+        '''
         self.stop_search()
         
         # This is a hack.  I don't yet know how to retrieve the previous value
@@ -290,14 +297,28 @@ class Suns_search(Wizard):
         self.cmd.delete(SELECTION_NAME)
     
     def set_rmsd(self, rmsd):
+        '''
+        This is the method that will be called once the user has
+        selected an rmsd cutoff via the wizard menu.
+        '''
         self.rmsd_cutoff = rmsd
         self.cmd.refresh_wizard()
     
     def set_num_structures(self, num_structures):
+        '''
+        This is the method that will be called once the user
+        has set the maximum number of structures to return.
+        '''
         self.number_of_structures = num_structures
         self.cmd.refresh_wizard()
     
     def ask_random_seed(self, ask_for_random_seed):
+        ''' 
+        This method will be called when the user clicks on the wizard
+        menu to randomize the Suns database.  If the user selects
+        to randomize the db, then this method will call get_random_seed
+        to get the random seed for randomization.
+        '''
         if(ask_for_random_seed):
             try:
                 self.random_seed = int(tkSimpleDialog.askstring(
@@ -309,6 +330,9 @@ class Suns_search(Wizard):
         self.cmd.refresh_wizard()
     
     def create_random_seed_menu(self):
+        '''
+        This method will create the Randomize Database menu.
+        '''
         random_seed_menu = [[2, 'Randomize Order', '']]
         random_seed_menu.append(
             [1, 'No', 'cmd.get_wizard().ask_random_seed(False)'])
@@ -317,6 +341,10 @@ class Suns_search(Wizard):
         return random_seed_menu
         
     def create_rmsd_menu(self):
+        '''
+        This method will create a wizard menu for the possible RMSD cutoff values.
+        Currently the values range from 0.1 to 2 A RMSD.
+        '''
         rmsd_menu = [[2, 'RMSD Cutoff', '']]
         for rmsd_choice in range(1,21):
             rmsd = float(rmsd_choice) / 10.0
@@ -325,6 +353,10 @@ class Suns_search(Wizard):
         return rmsd_menu
     
     def create_num_structures_menu(self):
+        '''
+        This method will create a wizard menu for the possible number of structures
+        to return.  Values range from 10 to 2000.
+        '''
         num_structures_menu = [[2, 'Number of Results', '']]
         for n in [10, 20, 50, 100, 200, 500, 1000]:
             num_structures_menu.append(
@@ -332,6 +364,10 @@ class Suns_search(Wizard):
         return num_structures_menu
     
     def create_server_address_menu(self):
+        '''
+        This method will create a wizard menu for the what address we should
+        use for the Suns server.
+        '''
         server_address_menu = [[2, 'Server Address', '']]
         server_address_menu.append(
             [1, 'Default: ' + SUNS_SERVER_ADDRESS, 'cmd.get_wizard().set_server_address("' + SUNS_SERVER_ADDRESS + '")'])
@@ -352,6 +388,9 @@ class Suns_search(Wizard):
         self.set_server_address(server_address)
     
     def get_panel(self):
+        '''
+        This is the wizard method that will create the main menu.
+        '''
         rmsd_menu = self.create_rmsd_menu()
         self.menu['rmsd'] = rmsd_menu
         num_structures_menu = self.create_num_structures_menu()
@@ -390,11 +429,14 @@ class Suns_search(Wizard):
         
         matches = filter(match, objs)
         if(len(matches) > 1):
+            # Fetching pdbs can take a while, so ask the user if he/she really
+            # wants to fetch a number of contexts.
             if(not tkMessageBox.askyesno(
                 "Multiple Results Selected",
                 "Fetching multiple contexts takes time and will block PyMOL until finished.  Proceed?")):
                 return;
         
+        # Loop over all objects that are enabled and have the Result suffix.
         for obj in matches:
             w = obj.split('_')
             del w[-1]
@@ -524,5 +566,11 @@ class Suns_search(Wizard):
                         self.word_list[key] = '(object %s and model %s and chain %s and resn %s and resi %s and name %s )' % tuple(list(key[0:2]) + list(key[3:6]) + [WORDS_DICT[word][key[4]]])
                     else:
                         self.word_list[key] = '(object %s and model %s and segi %s and chain %s and resn %s and resi %s and name %s )' % tuple(list(key[0:6]) + [WORDS_DICT[word][key[4]]])
+        # TODO Waters are typically represented by single oxygen atoms in pdbs,
+        # so if we want to allow for searches with water, we can't only look
+        # at bonds.  So we would use an else statement below, and check
+        # the atom selected to see if it's water, and if so, allow the selection.
+            
+                        
         self.cmd.unpick()
         self.do_select(SELECTION_NAME, ' or '.join(self.word_list.values()).strip())

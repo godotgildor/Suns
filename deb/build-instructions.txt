@@ -1,0 +1,28 @@
+First, check to see if this package name is already taken.
+aptitude show suns-search
+
+Next, create an empty package file.
+equivs-control suns-search
+
+Then, modify this file to describe where to install the files.
+
+Finally, build the deb.
+equivs-build suns-search
+
+To make the pika deb, download the tarball and extract the directory.
+Create a file called "config" and tell what version of Ubuntu you're targetting:
+
+[DEFAULT]
+Suite: precise
+
+Then run 
+python setup.py --command-packages=stdeb.command bdist_deb
+
+That will create the deb file in the bdist_deb directory.
+
+For the Windows msi, on a Windows machine (won't work on a Linux box) just run
+python.exe setup.py bdist --format=msi
+This will create the msi for you.
+
+To build the Windows .exe installer, on a Windows machine (won't work on a Linux
+box) run python make_suns_windows_installer.py py2exe

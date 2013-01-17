@@ -67,6 +67,14 @@ def get_pymol_paths():
     system = platform.system()
     if (system == 'Windows'):
         directories = ['C:\\Program Files\\PyMOL\\PyMOL\\modules']
+        try:
+            import _winreg
+            registry = _winreg.ConnectRegistry(None, _winreg.HKEY_CURRENT_USER)
+            regKey = _winreg.OpenKey(registry, r'Software\Wow6432Node\Schrodinger\PyMOL\PYMOL_PATH')
+            regPymolPath = _winreg.QueryValue(regKey, None)
+            directories += [regPymolPath]
+        except:
+            pass
     elif(system == 'Darwin'):
         directories = ['/Applications/MacPyMOLx11.app/pymol/modules', '/Applications/MacPyMOL.app/pymol/modules']
     else:

@@ -1,0 +1,11 @@
+import sys
+import os
+import exceptions
+import tkMessageBox
+from Tkinter import *
+from ttk import *
+
+SUNS_WIZARD_FN = 'suns_search.py'
+SUNS_PLUGIN_FN = 'suns_plugin.py'
+
+SUNS_WIZARD_CODE = """

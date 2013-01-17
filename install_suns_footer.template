@@ -1,0 +1,123 @@
+"""
+
+
+def check_and_install_pika():
+    try:
+        import pika
+    except exceptions.ImportError:
+        tkMessageBox.showerror(title='Missing "pika" library', message='Suns requires the "pika" Python library\n\n Please see http://pika.readthedocs.org/en/latest/ for "pika" installation instructions.')
+        sys.exit(1)
+
+
+class SelectInstallation(Frame):
+    def __init__(self, parent, vals, store):
+        Frame.__init__(self, parent)
+        self.parent = parent
+        self.vals   = vals
+        self.store  = store
+        
+        self.parent.title('Select Python installation')
+        self.pack(fill = 'both', expand = 1)
+        
+        listbox = Listbox(self)
+        for v in vals:
+            listbox.insert(END, v)
+        listbox.selection_set(0)
+        store["installation"] = vals[0]
+        
+        listbox.bind('<<ListboxSelect>>', self.onSelect)
+        listbox.place(x = 20, y = 20)
+        listbox.pack(fill = 'both', expand = 1, padx = 5, pady = 5)
+        
+        bottom = Frame(self)
+        bottom.pack(fill = 'both', expand = 1)
+        cancelButton = Button(bottom, text = 'Cancel', command = self.onCancel)
+        cancelButton.pack(side = RIGHT, padx = 5, pady = 0)
+        okButton = Button(bottom, text='OK', command = self.onOk)
+        okButton.pack(side = RIGHT)
+    
+    def onSelect(self, val):
+        sender = val.widget
+        idx    = sender.curselection()
+        value  = sender.get(idx)
+        self.store["installation"] = value
+    
+    def onCancel(self):
+        self.store["installation"] = ''
+        self.quit()
+    
+    def onOk(self):
+        if not self.store["installation"]:
+            tkMessageBox.showerror(title='Selection Required', message='You must select a Python installation to proceed')
+        else:
+            self.quit()
+
+
+def hasPyMOL(directory):
+    wizard_directory  = directory + '/pymol/wizard'
+    startup_directory = directory + '/pmg_tk/startup'
+    return os.path.exists(wizard_directory) and os.path.exists(startup_directory)
+
+
+def get_pymol_paths():
+    # PyMOL has a bad habit of keeping its own Python module hierarchy on some
+    # operating systems.  Prioritize these locations first because they are the
+    # most likely to be the correct install.
+    import platform
+    system = platform.system()
+    if (system == 'Windows'):
+        directories = ['C:\\Program Files\\PyMOL\\PyMOL\\modules']
+    elif(system == 'Darwin'):
+        directories = ['/Applications/MacPyMOLx11.app/pymol/modules', '/Applications/MacPyMOL.app/pymol/modules']
+    else:
+        directories = []
+    
+    # This covers Linux pretty well, and might also work on other systems
+    directories += sys.path
+    
+    pymol_installations = filter(hasPyMOL, list(set(directories)))
+    
+    if   len(pymol_installations) < 1:
+        tkMessageBox.showerror(title='Could not locate PyMOL', message='The Suns Installer could not detect a PyMOL installation on your computer.\n\nMake sure you have PyMOL installed.  If you do have PyMOL installed, contact the Suns maintainers at "suns.maintainers@gmail.com" to report this issue and tell them that the detected platform is "' + system + '"')
+        sys.exit(1)
+    elif len(pymol_installations) > 1:
+        root = Tk()
+        store = {}
+        
+        def onClose():
+            root.destroy()
+            store["installation"] = ''
+        
+        SelectInstallation(root, pymol_installations, store)
+        root.geometry("600x250+300+300")
+        root.protocol("WM_DELETE_WINDOW", onClose)
+        mainloop()
+        installation = store["installation"]
+    else:
+        installation = pymol_installations[0]
+    
+    return (installation + '/pymol/wizard', installation + '/pmg_tk/startup')
+
+
+def main():
+    check_and_install_pika()
+    (wizard_path, plugin_path) = get_pymol_paths()
+    
+    wizard_file = os.path.join(wizard_path, SUNS_WIZARD_FN)
+    try:
+        open(wizard_file, 'w').write(SUNS_WIZARD_CODE)
+    except:
+        tkMessageBox.showerror(title='Cannot install wizard', message='Suns cannot copy the PyMOL wizard to "%s".\n\nThe most likely reason is that you do not have permission to write to that folder.   If you do have sufficient permission, then contact the Suns maintainers at "suns.maintainers@gmail.com" to report this issue.' % wizard_file)
+        sys.exit(1)
+    
+    plugin_file = os.path.join(plugin_path, SUNS_PLUGIN_FN)
+    try:
+        open(plugin_file, 'w').write(SUNS_PLUGIN_CODE)
+    except:
+        tkMessageBox.showerror(title='Cannot install plugin loader', message='Suns cannot copy the PyMOL plugin loader to "%s".\n\nThe most likely reason is that you do not have permission to write to that folder.   If you do have sufficient permission, then contact the Suns maintainers at "suns.maintainers@gmail.com" to report this issue.' % plugin_file)
+        # Remove the wizard file as we probably don't want to have a half installed version lying around.
+        os.remove(wizard_file)
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main()

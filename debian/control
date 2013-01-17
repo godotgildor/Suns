@@ -1,0 +1,18 @@
+Package: pymol-suns-search
+Version: 1.0.0-1
+Section: science
+Priority: optional
+Architecture: all
+Depends: pymol, python-pika
+Maintainer: Gabriel Gonzalez <Gabriel439@gmail.com>
+Description: Structural search engine client for PyMOL
+ Suns is a networked structural search engine for protein structures.  This
+ plug-in adds the "Search" wizard to PyMOL that communicates with either the
+ free public search engine or a locally installed search engine of your choice.
+ .
+ * Specify all-atom search queries interactively using PyMOL's user interface.
+ .
+ * Click "Search" and the wizard streams hundreds of aligned results in seconds.
+ .
+ * Build on previous search results to incrementally assemble protein motifs.
+Homepage: http://suns-search.degradolab.org

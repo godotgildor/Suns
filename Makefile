@@ -1,4 +1,4 @@
-all: installer debian
+all: installer debian windows
 .PHONY: all
 
 VERSION := 1.0.0
@@ -65,6 +65,15 @@ $(BUILD_DIR)/$(DEB_FULL): \
               $(DEB_BUILD_DIR)/$(DOC_PATH)/changelog.Debian.gz
 	find $(DEB_BUILD_DIR) -type d | xargs chmod 755
 	fakeroot dpkg-deb --build $(DEB_BUILD_DIR) $(BUILD_DIR)/$(DEB_FULL)
+
+windows: $(BUILD_DIR)/install_suns.exe
+.PHONY: windows
+
+$(BUILD_DIR)/install_suns.exe : \
+	windows/make_suns_windows_installer.py \
+	installer/install_suns.py  
+	    python windows/make_suns_windows_installer.py py2exe 
+	    mv ./install_suns.exe build/.
 
 .PHONY: clean
 clean:

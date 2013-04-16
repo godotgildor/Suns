@@ -22,14 +22,16 @@ SELECTION_NAME = 'suns_query'  # The name for the query selection
 # the following namespaces so that automated PyMOL clients can safely use these
 # namespaces.
 RESULT_SUFFIX  = 'result'  # The suffix for each search result
-FETCH_SUFFIX   = 'context' # The suffix for each fetched context
+CONTEXT_SUFFIX   = 'context' # The suffix for each fetched context
 SAVE_SUFFIX    = 'save'    # The suffix for saved results
+SUNS_DEFAULT_GROUP_NAME = 'suns' # The default group name which will contain
+                                 # results, context, saves, etc.
 
 SUNS_SERVER_ADDRESS = 'suns.degradolab.org' # The default message queue host
 
 class SearchThread(threading.Thread):
     def __init__(
-            self, rmsd, num_struct, random_seed, pdbstrs, server_address, cmd ):
+            self, rmsd, num_struct, random_seed, pdbstrs, server_address, group_name, cmd ):
         '''
         This is the constructor for our SearchThread.  Each time we perform
         a structural search, a new thread will be created.
@@ -49,6 +51,7 @@ class SearchThread(threading.Thread):
         self.channel = None # The AMQP Channel, unique per thread
         self.pdbs = {} # Tracks results to avoid duplicate generated names
         self.suns_server_address = server_address # Currently selected host
+        self.group_name = group_name # What is the name of the group?
         # The following variable will ensure that we don't
         # stop consuming before we begin consuming etc.
         self.concurrency_management = {'begun': False, # True once the thread begins consuming
@@ -99,6 +102,8 @@ class SearchThread(threading.Thread):
                 
                 # Load the structure into pymol.
                 self.cmd.read_pdbstr(body[5:], sele_name)
+                curr_group_name = self.group_name + '_' + RESULT_SUFFIX
+                self.cmd.group(curr_group_name, sele_name)
                 
                 self.pdbs[pdbid] += 1
             elif(tag == '2'):
@@ -258,6 +263,7 @@ class Suns_search(Wizard):
         self.random_seed = 0
         self.number_of_structures = 100
         self.suns_server_address = SUNS_SERVER_ADDRESS
+        self.group_name = SUNS_DEFAULT_GROUP_NAME
         
         self.searchThread = None
         
@@ -274,6 +280,8 @@ class Suns_search(Wizard):
         # this setting.
         self.prev_auto_hide_setting = self.cmd.get('auto_hide_selections')
         self.cmd.set('auto_hide_selections',0)
+        self.prev_auto_zoom_setting = self.cmd.get('auto_zoom')
+        self.cmd.set('auto_zoom', 0)
     
     def cleanup(self):
         '''
@@ -294,6 +302,7 @@ class Suns_search(Wizard):
         self.cmd.button('single_left', 'None', '+/-')
         
         self.cmd.set('auto_hide_selections', self.prev_auto_hide_setting)
+        self.cmd.set('auto_zoom', self.prev_auto_zoom_setting)
         self.cmd.delete(SELECTION_NAME)
     
     def set_rmsd(self, rmsd):
@@ -440,7 +449,7 @@ class Suns_search(Wizard):
         for obj in matches:
             w = obj.split('_')
             del w[-1]
-            w.append(FETCH_SUFFIX)
+            w.append(CONTEXT_SUFFIX)
             new_object_name = '_'.join(w)
             self.cmd.fetch(w[0], new_object_name)
             attr_dict = {'x' : []}
@@ -467,6 +476,8 @@ class Suns_search(Wizard):
             self.cmd.pair_fit(
                 new_object_name + ' and (' + selection + ')',
                 obj             + ' and (' + selection + ')')
+            curr_group_name = self.group_name + '_' + CONTEXT_SUFFIX
+            self.cmd.group(curr_group_name, new_object_name)
         self.cmd.orient(SELECTION_NAME)
     
     # Deletion is done entirely on the basis of reserved name spaces rather than
@@ -482,7 +493,7 @@ class Suns_search(Wizard):
         self.cmd.delete('*_' + SAVE_SUFFIX)
     
     def delete_full(self):
-        self.cmd.delete('*_' + FETCH_SUFFIX)
+        self.cmd.delete('*_' + CONTEXT_SUFFIX)
     
     def launch_search(self):
         pdbstr = self.cmd.get_pdbstr(SELECTION_NAME)
@@ -494,6 +505,7 @@ class Suns_search(Wizard):
             self.random_seed,
             pdbstr,
             self.suns_server_address,
+            self.group_name,
             self.cmd)
         self.searchThread.start()
     
@@ -533,6 +545,8 @@ class Suns_search(Wizard):
                 newObj = '_'.join(words)
                 self.cmd.set_name(obj, newObj)
                 obj = newObj
+                curr_group_name = self.group_name + '_' + SAVE_SUFFIX
+                self.cmd.group(curr_group_name, newObj)
             self.cmd.iterate(
                 "pk1",
                 'x.append( (model,segi,chain,resn,resi,name,alt) )',

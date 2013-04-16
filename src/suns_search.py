@@ -104,6 +104,7 @@ class SearchThread(threading.Thread):
                 self.cmd.read_pdbstr(body[5:], sele_name)
                 curr_group_name = self.group_name + '_' + RESULT_SUFFIX
                 self.cmd.group(curr_group_name, sele_name)
+                self.cmd.group(self.group_name, curr_group_name)
                 
                 self.pdbs[pdbid] += 1
             elif(tag == '2'):
@@ -384,6 +385,13 @@ class Suns_search(Wizard):
             [1, 'User defined', 'cmd.get_wizard().ask_server_address()'])
         return server_address_menu
         
+    def create_group_name_menu(self):
+        '''
+        This method will create a wizard menu for what we should
+        use for the group name for results, contexts, and saves.
+        '''
+        group_name_menu = [[1, 'Group Name: ' % self.group_name, 'cmd.get_wizard().ask_group_name()']]
+        
     def set_server_address(self, server_address):
         self.suns_server_address = server_address
         self.cmd.refresh_wizard()
@@ -395,6 +403,18 @@ class Suns_search(Wizard):
         except:
             server_address = SUNS_SERVER_ADDRESS
         self.set_server_address(server_address)
+    
+    def set_group_name(self, group_name):
+        self.group_name = group_name
+        self.cmd.refresh_wizard()
+    
+    def ask_group_name(self):
+        try:
+            group_name = tkSimpleDialog.askstring(
+                 'Group name', 'Group name:')
+        except:
+            group_name = SUNS_DEFAULT_GROUP_NAME
+        self.set_group_name(group_name)
     
     def get_panel(self):
         '''
@@ -408,6 +428,8 @@ class Suns_search(Wizard):
         self.menu['random_seed'] = random_seed_menu
         server_address_menu = self.create_server_address_menu()
         self.menu['server'] = server_address_menu
+        group_name_menu = self.create_group_name_menu()
+        self.menu['group_name'] = group_name_menu
         
         return [
             [ 1, 'Structural Search Engine',''],
@@ -417,6 +439,7 @@ class Suns_search(Wizard):
             [ 3, 'Cap: ' + str(self.number_of_structures) + ' results', 'num_structures'],
             [ 3, 'Order: ' + {True: 'Random (Seed = %d' % self.random_seed + ')', False: 'Default'}[self.random_seed != 0], 'random_seed'],
             [ 3, 'Server: ' + self.suns_server_address, 'server'],
+            [ 3, 'Group name: ' + self.group_name, 'group_name'],
             [ 2, 'Clear Results', 'cmd.get_wizard().delete_results()'],
             [ 2, 'Clear Selection','cmd.get_wizard().clear_selection()'],
             [ 2, 'Clear Saved', 'cmd.get_wizard().delete_saved()'],
@@ -478,6 +501,7 @@ class Suns_search(Wizard):
                 obj             + ' and (' + selection + ')')
             curr_group_name = self.group_name + '_' + CONTEXT_SUFFIX
             self.cmd.group(curr_group_name, new_object_name)
+            self.cmd.group(self.group_name, curr_group_name)
         self.cmd.orient(SELECTION_NAME)
     
     # Deletion is done entirely on the basis of reserved name spaces rather than
@@ -547,6 +571,7 @@ class Suns_search(Wizard):
                 obj = newObj
                 curr_group_name = self.group_name + '_' + SAVE_SUFFIX
                 self.cmd.group(curr_group_name, newObj)
+                self.cmd.group(self.group_name, curr_group_name)
             self.cmd.iterate(
                 "pk1",
                 'x.append( (model,segi,chain,resn,resi,name,alt) )',

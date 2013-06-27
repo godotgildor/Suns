@@ -326,9 +326,9 @@ class AACycler:
             self.currAA.set('GLY')
         
     def show(self):
-        self.cmd.hide(representation='nonbonded', selection='all and *_result')
-        self.cmd.hide(representation=['lines', 'sticks'][self.linesSticksVar.get()], selection='all and *_result')
-        selection_txt = '*_result and resn ' + self.currAA.get()
+        self.cmd.hide(representation='nonbonded', selection='all and *_' + RESULT_SUFFIX)
+        self.cmd.hide(representation=['lines', 'sticks'][self.linesSticksVar.get()], selection='all and *_' + RESULT_SUFFIX)
+        selection_txt = '*_' + RESULT_SUFFIX + ' and resn ' + self.currAA.get()
         if(self.bbScVar.get() == 0):
             selection_txt += ' and name N+CA+C+O'
         elif(self.bbScVar.get() == 1):

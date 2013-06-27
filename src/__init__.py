@@ -17,6 +17,7 @@ import socket
 import tkSimpleDialog
 import tkMessageBox
 import sys
+from Tkinter import *
 
 # The following two dictionaries are automatically generated from the motif
 # directories
@@ -36,6 +37,20 @@ SUNS_DEFAULT_GROUP_NAME = 'suns' # The default group name which will contain
                                  # results, context, saves, etc.
 
 SUNS_SERVER_ADDRESS = 'suns.degradolab.org' # The default message queue host
+
+CYCLIC_SELECT = '_CYCLIC'
+AAS = ['GLY','ALA','VAL','LEU','ILE',
+       'MET','PRO','PHE','TRP','GLU',
+       'ASP','GLN','ASN','LYS','ARG',
+       'HIS','SER','THR','CYS','TYR']
+def make_cyclic_dictionary(l):
+    cd = {}
+    for i, v in enumerate(l):
+        pre = (i-1) % len(l)
+        post = (i+1) % len(l)
+        cd[v] = (l[pre], l[post])
+        
+    return cd
 
 class SearchThread(threading.Thread):
     def __init__(
@@ -245,6 +260,91 @@ class SearchThread(threading.Thread):
             if(message != ''):
                 print message
 
+class AACycler:
+    '''This class creates a UI to allow for the easy cycling through
+       amino acids from SUNS search results.'''
+    def __init__(self, app, cmd):
+        self.parent = app.root
+        self.child = Toplevel(master=self.parent)
+        self.cmd = cmd
+        
+        self.create_UI()
+        self.aas = make_cyclic_dictionary(AAS)
+        
+    def create_UI(self):
+        self.aaFrame = Frame(self.child)
+        self.bb_sc_frame = Frame(self.child)
+        self.lines_sticks_frame = Frame(self.child)
+        self.buttons_frame = Frame(self.child)
+        self.aaFrame.grid(row=0, column=0)
+        self.bb_sc_frame.grid(row=1, column=0)
+        self.lines_sticks_frame.grid(row=2, column=0)
+        self.buttons_frame.grid(row=3, column=0)
+    
+        self.leftButton = Button(self.aaFrame, text='<', command=self.decrement_aa)
+        self.currAA = StringVar()
+        self.currAA.set('GLY')
+        self.aaEntry = Entry(self.aaFrame, width=5, textvariable=self.currAA)
+        self.aaEntry.bind('<Return>', self.change_AA)
+        self.rightButton = Button(self.aaFrame, text='>', command=self.increment_aa)
+        self.leftButton.grid(row=0, column=0)
+        self.aaEntry.grid(row=0, column=1)
+        self.rightButton.grid(row=0, column=2)
+        
+        
+        self.bbScVar = IntVar()
+        self.bbScVar.set(0)
+        self.bb_radio = Radiobutton(self.bb_sc_frame, text='BB',
+                                    variable=self.bbScVar, value=0)
+        self.sc_radio = Radiobutton(self.bb_sc_frame, text='SC',
+                                    variable=self.bbScVar, value=1)
+        self.bb_sc_radio = Radiobutton(self.bb_sc_frame, text='BB+SC',
+                                       variable=self.bbScVar, value=2)
+        self.bb_radio.grid(row=0,column=0)
+        self.sc_radio.grid(row=0,column=1)
+        self.bb_sc_radio.grid(row=0,column=2)
+        
+        self.linesSticksVar = IntVar()
+        self.linesSticksVar.set(0)
+        self.lines_radio = Radiobutton(self.lines_sticks_frame, text='Lines',
+                                       variable=self.linesSticksVar, value=0)
+        self.sticks_radio = Radiobutton(self.lines_sticks_frame, text='Sticks',
+                                        variable=self.linesSticksVar, value=1)
+        self.lines_radio.grid(row=0, column=0)
+        self.sticks_radio.grid(row=0, column=1)
+        
+        self.closeButton = Button(self.buttons_frame, text='Close', command=self.close)
+        #self.showButton = Button(self.buttons_frame, text='Show', command=self.show)
+        self.closeButton.grid(row=0, column=0)
+        #self.showButton.grid(row=0, column=1)
+        
+    def close(self):
+        self.child.destroy()
+        
+    def change_AA(self, foo=None):
+        if(self.currAA.get() not in self.aas):
+            self.currAA.set('GLY')
+        
+    def show(self):
+        self.cmd.hide(representation='nonbonded', selection='all and *_result')
+        self.cmd.hide(representation=['lines', 'sticks'][self.linesSticksVar.get()], selection='all and *_result')
+        selection_txt = '*_result and resn ' + self.currAA.get()
+        if(self.bbScVar.get() == 0):
+            selection_txt += ' and name N+CA+C+O'
+        elif(self.bbScVar.get() == 1):
+            selection_txt += ' and not name N+CA+C+O'
+        self.cmd.select(CYCLIC_SELECT, selection_txt)
+        self.cmd.show(representation=['lines', 'sticks'][self.linesSticksVar.get()], selection=CYCLIC_SELECT)
+        
+    def decrement_aa(self):
+        self.change_AA()
+        self.currAA.set(self.aas[self.currAA.get()][0])
+        self.show()
+        
+    def increment_aa(self):
+        self.change_AA()
+        self.currAA.set(self.aas[self.currAA.get()][1])
+        self.show()
 
 # This wizard requires the ability to select bonds instead of atoms, since all
 # motifs are defined by bonds.  The only way I know how to do that is to
@@ -254,13 +354,14 @@ class Suns_search(Wizard):
     '''
     This class  will create the wizard for performing Suns searches.
     '''
-    def __init__(self, _self = cmd):
+    def __init__(self, app, _self = cmd):
         Wizard.__init__(self, _self)
         
         # Clean the slate
         self.cmd.unpick()        
         self.do_select(SELECTION_NAME, 'none')
         self.prompt = ['Select motifs using left click']
+        self.app = app
         
         # type Key = (Object, Model, Segi, Chain, Resn, Resi, Name)
         # type Val = Selection corresponding to the key
@@ -444,6 +545,7 @@ class Suns_search(Wizard):
             [ 2, 'Clear Saved', 'cmd.get_wizard().delete_saved()'],
             [ 2, 'Fetch Full Contexts','cmd.get_wizard().fetch_full_context()'],
             [ 2, 'Clear Contexts','cmd.get_wizard().delete_full()'],
+            [ 2, 'Cycle Amino Acids','cmd.get_wizard().cycle_amino_acids()'],
             [ 2, 'Done','cmd.set_wizard()'] ]
     
     def fetch_full_context(self):
@@ -517,6 +619,11 @@ class Suns_search(Wizard):
     
     def delete_full(self):
         self.cmd.delete('*_' + CONTEXT_SUFFIX)
+    
+    def cycle_amino_acids(self):
+        '''This method will create a gui which allows the user to cycle through
+           various amino acids from the search results.'''
+        brett = AACycler(self.app, self.cmd)
     
     def launch_search(self):
         pdbstr = self.cmd.get_pdbstr(SELECTION_NAME)
@@ -613,13 +720,13 @@ class Suns_search(Wizard):
         self.cmd.unpick()
         self.do_select(SELECTION_NAME, ' or '.join(self.word_list.values()).strip())
 
-def suns_search():
+def suns_search(app):
     '''
     DESCRIPTION
     
     Suns search client.
     '''
-    wiz = Suns_search()
+    wiz = Suns_search(app)
     cmd.set_wizard(wiz)
 
 # add "suns_search" as pymol command
@@ -631,4 +738,4 @@ sys.modules['pymol.wizard.suns_search'] = sys.modules[__name__]
 # add item to plugin menu
 def __init_plugin__(self):
     from pymol.plugins import addmenuitem
-    addmenuitem('Suns Search', suns_search)
+    addmenuitem('Suns Search', lambda s=self : suns_search(s))

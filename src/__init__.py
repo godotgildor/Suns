@@ -39,10 +39,10 @@ SUNS_DEFAULT_GROUP_NAME = 'suns' # The default group name which will contain
 SUNS_SERVER_ADDRESS = 'suns.degradolab.org' # The default message queue host
 
 CYCLIC_SELECT = '_CYCLIC'
-AAS = ['GLY','ALA','VAL','LEU','ILE',
-       'MET','PRO','PHE','TRP','GLU',
-       'ASP','GLN','ASN','LYS','ARG',
-       'HIS','SER','THR','CYS','TYR']
+AAS = ['ALL', 'GLY','ALA','VAL','LEU','ILE',
+       'MET','PRO','PHE','TRP','TYR',
+       'HIS','LYS','ARG','GLU','ASP',
+       'GLN','ASN','SER','THR','CYS']
 def make_cyclic_dictionary(l):
     cd = {}
     for i, v in enumerate(l):
@@ -283,7 +283,7 @@ class AACycler:
     
         self.leftButton = Button(self.aaFrame, text='<', command=self.decrement_aa)
         self.currAA = StringVar()
-        self.currAA.set('GLY')
+        self.currAA.set(AAS[0])
         self.aaEntry = Entry(self.aaFrame, width=5, textvariable=self.currAA)
         self.aaEntry.bind('<Return>', self.change_AA)
         self.rightButton = Button(self.aaFrame, text='>', command=self.increment_aa)
@@ -294,15 +294,16 @@ class AACycler:
         
         self.bbScVar = IntVar()
         self.bbScVar.set(0)
-        self.bb_radio = Radiobutton(self.bb_sc_frame, text='BB',
-                                    variable=self.bbScVar, value=0)
-        self.sc_radio = Radiobutton(self.bb_sc_frame, text='SC',
-                                    variable=self.bbScVar, value=1)
         self.bb_sc_radio = Radiobutton(self.bb_sc_frame, text='BB+SC',
-                                       variable=self.bbScVar, value=2)
-        self.bb_radio.grid(row=0,column=0)
-        self.sc_radio.grid(row=0,column=1)
-        self.bb_sc_radio.grid(row=0,column=2)
+                                       variable=self.bbScVar, value=0)
+        self.bb_radio = Radiobutton(self.bb_sc_frame, text='BB',
+                                    variable=self.bbScVar, value=1)
+        self.sc_radio = Radiobutton(self.bb_sc_frame, text='SC',
+                                    variable=self.bbScVar, value=2)
+        self.bb_sc_radio.grid(row=0,column=0)
+        self.bb_radio.grid(row=0,column=1)
+        self.sc_radio.grid(row=0,column=2)
+        
         
         self.linesSticksVar = IntVar()
         self.linesSticksVar.set(0)
@@ -321,17 +322,19 @@ class AACycler:
     def close(self):
         self.child.destroy()
         
-    def change_AA(self, foo=None):
+    def change_AA(self):
         if(self.currAA.get() not in self.aas):
-            self.currAA.set('GLY')
+            self.currAA.set(AAS[0])
         
     def show(self):
         self.cmd.hide(representation='nonbonded', selection='all and *_' + RESULT_SUFFIX)
         self.cmd.hide(representation=['lines', 'sticks'][self.linesSticksVar.get()], selection='all and *_' + RESULT_SUFFIX)
-        selection_txt = '*_' + RESULT_SUFFIX + ' and resn ' + self.currAA.get()
-        if(self.bbScVar.get() == 0):
+        selection_txt = '*_' + RESULT_SUFFIX
+        if(self.currAA.get() != 'ALL'):
+            selection_txt += ' and resn ' + self.currAA.get()
+        if(self.bbScVar.get() == 1):
             selection_txt += ' and name N+CA+C+O'
-        elif(self.bbScVar.get() == 1):
+        elif(self.bbScVar.get() == 2):
             selection_txt += ' and not name N+CA+C+O'
         self.cmd.select(CYCLIC_SELECT, selection_txt)
         self.cmd.show(representation=['lines', 'sticks'][self.linesSticksVar.get()], selection=CYCLIC_SELECT)

@@ -5,7 +5,7 @@ LIGAND_DEFINITIONS = {'phosphate': 'OP(=O)(O)O',
                       'nitrate': 'N(=O)(=O)O',
                       'selmet': 'C[Se]C',
                       'acetate': 'C(=O)(O)C',
-                      'adamantane': '[C@@]12C([C@]3(C([C@@](C1(C)C)(C([C@@](C2(C)C)(C3(C)C)C)(C)C)C)(C)C)C)(C)C',
+                      'adamantane': 'N[C@@]12C[C@H]3C[C@@H](C1)C[C@@H](C2)C3',
                      }
                      
 LIGAND_SELECTION = '_SUNS_LIGAND'

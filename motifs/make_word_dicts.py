@@ -1,7 +1,49 @@
 import sys
 import os
-import miscUtils
 import openbabel
+import glob
+
+OUTPUT_FILE_SUFFIX = '''def find_aa_word(obj, bondAtoms):
+    key = None
+    selectionStatement = None
+    
+    # The bond key is of the form (resn, atom0, atom1) where the atom
+    # names are in alphabetical order.
+    atomNames = [bondAtoms[0]['name'], bondAtoms[1]['name']]
+    atomNames.sort()
+    bond_key = (bondAtoms[0]['resn'], atomNames[0], atomNames[1])
+    
+    if(bond_key in BOND_WORD_DICT):
+        word = BOND_WORD_DICT[bond_key]
+        # Now form a new key that has the current residue and the word.
+        key = (obj, bondAtoms[0]['model'], bondAtoms[0]['segi'], bondAtoms[0]['chain'], bondAtoms[0]['resn'], bondAtoms[0]['resi'], word)
+        if(bondAtoms[0]['segi'].strip() == ''):
+            selectionStatement = '(object %s and model %s and chain %s and resn %s and resi %s and name %s )' % tuple(list(key[0:2]) + list(key[3:6]) + [WORDS_DICT[word][key[4]]])
+        else:
+            selectionStatement = '(object %s and model %s and segi %s and chain %s and resn %s and resi %s and name %s )' % tuple(list(key[0:6]) + [WORDS_DICT[word][key[4]]])
+            
+    return (key, selectionStatement)
+'''
+
+################################################################################
+def getFileList(dirOfInterestOrFile, query='*', recursive=True):
+    '''
+    This function will get all files matching the query in the given directory.
+    '''
+    listOfFiles = []
+    # Recursively get all files in this directory and
+    # sub-directory.
+    if(os.path.isdir(dirOfInterestOrFile)):
+        if(recursive):
+            for path, dirs, files in os.walk(dirOfInterestOrFile):
+                listOfFiles += glob.glob( os.path.join(path, query) )
+        else:
+            listOfFiles += glob.glob( os.path.join(dirOfInterestOrFile, query) )
+    elif(os.path.isfile(dirOfInterestOrFile)):
+        for line in open(dirOfInterestOrFile):
+            listOfFiles += [line.strip()]
+
+    return listOfFiles
 
 ################################################################################
 def get_bonds(obConversion, f):
@@ -20,11 +62,19 @@ def get_bonds(obConversion, f):
     return bonds
 
 ################################################################################
-if(len(sys.argv) < 2):
-    print 'Usage: python make_word_dicts.py <directory>'
+def write_output(filename, wordsDict, bondWordDict):
+    of = open(filename, 'w')
+    of.write('WORDS_DICT = ' + str(wordsDict) + '\n\n')
+    of.write('BOND_WORD_DICT = ' + str(bondWordDict) + '\n\n')
+    of.write(OUTPUT_FILE_SUFFIX)
+    of.close()
+
+################################################################################
+if(len(sys.argv) < 3):
+    print 'Usage: python make_word_dicts.py <directory> <output file>'
     sys.exit(1)
 
-fl = miscUtils.getFileList(sys.argv[1], '*.pdb')
+fl = getFileList(sys.argv[1], '*.pdb')
 
 obConversion = openbabel.OBConversion()
 obConversion.SetInAndOutFormats('pdb', 'pdb')
@@ -48,5 +98,6 @@ for i, f in enumerate(fl):
         else:
             wordsDict[word][resn] += '+' + '+'.join([bond[0], bond[1]])
         bondWordDict[key] = word
-    
+
+write_output(sys.argv[2], wordsDict, bondWordDict)
 open('wordsDict.py', 'w').write('WORDS_DICT = ' + str(wordsDict) + '\n\nBOND_WORD_DICT = ' + str(bondWordDict) + '\n\n')

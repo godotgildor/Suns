@@ -10,6 +10,7 @@ Copyright (c) 2013, Brett Hannigan and Gabriel Gonzalez
 from pymol.wizard import Wizard
 from pymol import cmd
 from pika import *
+import suns_aa_motifs
 import uuid
 import threading
 import json
@@ -564,13 +565,13 @@ class Suns_search(Wizard):
             return (len(words) == 3) and (words[2] == RESULT_SUFFIX)
         
         matches = filter(match, objs)
-        if(len(matches) > 1):
-            # Fetching pdbs can take a while, so ask the user if he/she really
-            # wants to fetch a number of contexts.
-            if(not tkMessageBox.askyesno(
-                "Multiple Results Selected",
-                "Fetching multiple contexts takes time and will block PyMOL until finished.  Proceed?")):
-                return;
+        #if(len(matches) > 1):
+        #    # Fetching pdbs can take a while, so ask the user if he/she really
+        #    # wants to fetch a number of contexts.
+        #    if(not tkMessageBox.askyesno(
+        #        "Multiple Results Selected",
+        #        "Fetching multiple contexts takes time and will block PyMOL until finished.  Proceed?")):
+        #        return;
         
         # Loop over all objects that are enabled and have the Result suffix.
         for obj in matches:
@@ -660,6 +661,64 @@ class Suns_search(Wizard):
             self.cmd.select(name, 'none')
             self.cmd.disable(name)
             
+    def is_obj_from_suns_result(self, obj):
+        '''
+        This method checks the object name to see if 
+        it is a suns result or not.
+        '''
+        words = obj.split('_')
+        if( (len(words) == 3) and (words[2] == RESULT_SUFFIX) ):
+            return True
+        
+        return False
+    
+    def move_result_to_saved(obj):
+        '''
+        This method will move the suns result object to a suns saved object.
+        '''
+        # First rename the object to a save object.
+        words = obj.split('_')
+        del words[2]
+        words.append(SAVE_SUFFIX)
+        newObj = '_'.join(words)
+        self.cmd.set_name(obj, newObj)
+        
+        # Now put the new save object into the saved group.
+        curr_group_name = self.group_name + '_' + SAVE_SUFFIX
+        self.cmd.group(curr_group_name, newObj)
+        self.cmd.group(self.group_name, curr_group_name)
+        
+        return newObj
+
+    def unpack_attr_dict(self, attr_dict_entry):
+        retVal = {}
+        retVal['model'] = attr_dict_entry[0]
+        retVal['segi'] = attr_dict_entry[1]
+        retVal['chain'] = attr_dict_entry[2]
+        retVal['resn'] = attr_dict_entry[3]
+        retVal['resi'] = attr_dict_entry[4]
+        retVal['name'] = attr_dict_entry[5]
+        retVal['alt'] = attr_dict_entry[6]
+        
+        return retVal
+
+    def get_bond_atoms(self):
+        attr_dict = {'x' : []}
+        self.cmd.iterate(
+                "pk1",
+                'x.append( (model,segi,chain,resn,resi,name,alt) )',
+                space = attr_dict)
+        self.cmd.iterate(
+                "pk2",
+                'x.append( (model,segi,chain,resn,resi,name,alt) )',
+                space = attr_dict)
+        
+        retVal = []
+        retVal += [self.unpack_attr_dict(attr_dict['x'][0])]
+        retVal += [self.unpack_attr_dict(attr_dict['x'][1])]
+                
+        return retVal
+            
     def do_pick(self, bondFlag):
         '''
         This is the method that is called each time the user
@@ -668,52 +727,33 @@ class Suns_search(Wizard):
         # I think bondFlag only = 1 if we are selecting bonds.
         # We are only accepting bond selections.
         if(bondFlag == 1):
-            attr_dict = {'x' : []}
-            # Get the atom info for the two atoms of the bond.
+            # Get the object name of the selection
             obj, unused = self.cmd.index("pk1")[0]
-            words = obj.split('_')
-            if(len(words) == 3 and words[2] == RESULT_SUFFIX):
-                del words[2]
-                words.append(SAVE_SUFFIX)
-                newObj = '_'.join(words)
-                self.cmd.set_name(obj, newObj)
-                obj = newObj
-                curr_group_name = self.group_name + '_' + SAVE_SUFFIX
-                self.cmd.group(curr_group_name, newObj)
-                self.cmd.group(self.group_name, curr_group_name)
-            self.cmd.iterate(
-                "pk1",
-                'x.append( (model,segi,chain,resn,resi,name,alt) )',
-                space = attr_dict)
-            self.cmd.iterate(
-                "pk2",
-                'x.append( (model,segi,chain,resn,resi,name,alt) )',
-                space = attr_dict)
-            bond = [attr_dict['x'][0][5], attr_dict['x'][1][5]]
-            bond.sort()
-            
+            if(self.is_obj_from_suns_result(obj)):
+                obj = self.move_result_to_saved(obj)
+
+            # Now get info about each of the atoms in the given bond.
+            bondAtoms = self.get_bond_atoms()
+
             # We only handle bonds per residue, no residue spanning bonds.
-            if( (attr_dict['x'][0][2] != attr_dict['x'][1][2])
-             or (attr_dict['x'][0][4] != attr_dict['x'][1][4]) ):
+            if( (bondAtoms[0]['chain'] != bondAtoms[1]['chain'])
+             or (bondAtoms[0]['resi'] != bondAtoms[1]['resi']) ):
                 return
             
-            # The bond key is of the form (resn, atom0, atom1) where the atom
-            # names are in alphabetical order.
-            bond_key = (attr_dict['x'][0][3], bond[0], bond[1])
-            # Look up what word this bond is part of.
-            if(bond_key in BOND_WORD_DICT):
-                word = BOND_WORD_DICT[bond_key]
-                # Now form a new key that has the current residue and the word.
-                key = tuple([obj] + list(attr_dict['x'][0][0:5]) + [word])
+            (key, selectStatement) = suns_aa_motifs.find_aa_word(obj, bondAtoms)
+            # If not part of one of our amino acid words, check to see if we have ligand info about it.
+            if((key == None) or (selectStatement == None)):
+                import suns_ligand
+                (selectStatement, key) = suns_ligand.find_ligand_word(self.cmd, obj, bondAtoms)
+            
+            if((key != None) and (selectStatement != None)):
+                # Now check to see if this word is already selected and deselect it if so.
                 if(key in self.word_list):
                     # Remove the motif from the selection
                     del self.word_list[key]
                 else:
-                    # Add the motif to the selection
-                    if(key[2].strip() == ''):
-                        self.word_list[key] = '(object %s and model %s and chain %s and resn %s and resi %s and name %s )' % tuple(list(key[0:2]) + list(key[3:6]) + [WORDS_DICT[word][key[4]]])
-                    else:
-                        self.word_list[key] = '(object %s and model %s and segi %s and chain %s and resn %s and resi %s and name %s )' % tuple(list(key[0:6]) + [WORDS_DICT[word][key[4]]])
+                    self.word_list[key] = selectStatement
+
         # TODO Waters are typically represented by single oxygen atoms in pdbs,
         # so if we want to allow for searches with water, we can't only look
         # at bonds.  So we would use an else statement below, and check

@@ -64,7 +64,8 @@ def look_for_ligand(fullResiduePdbstr, atomPdbstr):
         smarts = pybel.Smarts(LIGAND_DEFINITIONS[ligand])
         matches = smarts.findall(mol)
         for match in matches:
-            if((atomIndices[0] in match) and (atomIndices[1] in match)):
+            # The Smarts search appears to use 1 based indexing.
+            if(((atomIndices[0]+1) in match) and ((atomIndices[1]+1) in match)):
                 retVal = {}
                 retVal['motif'] = ligand
                 retVal['pdbstr'] = get_pdb_string(fullResiduePdbstr, match)
@@ -87,18 +88,22 @@ def find_ligand_word(cmd, obj, bondAtoms):
     fullResiduePdbstr = cmd.get_pdbstr(LIGAND_SELECTION)
     
     # Get the pdb string of the first atom
-    selectStatement2 = selectStatement + ' and name ' + bondAtoms[0][5]
+    selectStatement2 = selectStatement + ' and name ' + bondAtoms[0]['name']
     cmd.select(LIGAND_SELECTION, selectStatement2)
     atomPdbstr = [cmd.get_pdbstr(LIGAND_SELECTION).split('\n')[0][13:]]
     
     # Get the pdb string of the second atom
-    selectStatement2 = selectStatement + ' and name ' + bondAtoms[1][5]
+    selectStatement2 = selectStatement + ' and name ' + bondAtoms[1]['name']
     cmd.select(LIGAND_SELECTION, selectStatement2)
     atomPdbstr += [cmd.get_pdbstr(LIGAND_SELECTION).split('\n')[0][13:]]
     
     ligandMatch = look_for_ligand(fullResiduePdbstr, atomPdbstr)
-    selectStatement = '(' + selectStatement + ' and name ' + ligandMatch['atomNames'] + ')'
-    key = (obj, bondAtoms[0]['model'], bondAtoms[0]['segi'], bondAtoms[0]['chain'], bondAtoms[0]['resn'], bondAtoms[0]['resi'], ligandMatch['ligand'])
+    key = None
+    if(ligandMatch != {}):
+        selectStatement = '(' + selectStatement + ' and name ' + ligandMatch['atomNames'] + ')'
+        key = (obj, bondAtoms[0]['model'], bondAtoms[0]['segi'], bondAtoms[0]['chain'], bondAtoms[0]['resn'], bondAtoms[0]['resi'], ligandMatch['motif'])
+    else:
+        selectStatement = None
                 
     return (selectStatement, key)
     

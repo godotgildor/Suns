@@ -702,21 +702,17 @@ class Suns_search(Wizard):
         
         return retVal
 
+    def get_atom(self, selection):
+        attr_dict = {'x': []}
+        self.cmd.iterate(
+                selection,
+                'x.append( (model,segi,chain,resn,resi,name,alt) )',
+                space = attr_dict)
+
+        return self.unpack_attr_dict(attr_dict['x'][0])
+
     def get_bond_atoms(self):
-        attr_dict = {'x' : []}
-        self.cmd.iterate(
-                "pk1",
-                'x.append( (model,segi,chain,resn,resi,name,alt) )',
-                space = attr_dict)
-        self.cmd.iterate(
-                "pk2",
-                'x.append( (model,segi,chain,resn,resi,name,alt) )',
-                space = attr_dict)
-        
-        retVal = []
-        retVal += [self.unpack_attr_dict(attr_dict['x'][0])]
-        retVal += [self.unpack_attr_dict(attr_dict['x'][1])]
-                
+        retVal = [self.get_atom('pk1'), self.get_atom('pk2')]
         return retVal
             
     def do_pick(self, bondFlag):
@@ -724,11 +720,11 @@ class Suns_search(Wizard):
         This is the method that is called each time the user
         uses the mouse to select a bond or atom.
         '''
-        # I think bondFlag only = 1 if we are selecting bonds.
-        # We are only accepting bond selections.
+        (key, selectStatement) = (None, None)
+        obj, unused = self.cmd.index("pk1")[0]
+        # bondFlag = 1 if we are selecting bonds.
         if(bondFlag == 1):
             # Get the object name of the selection
-            obj, unused = self.cmd.index("pk1")[0]
             if(self.is_obj_from_suns_result(obj)):
                 obj = self.move_result_to_saved(obj)
 
@@ -745,20 +741,20 @@ class Suns_search(Wizard):
             if((key == None) or (selectStatement == None)):
                 import suns_ligand
                 (selectStatement, key) = suns_ligand.find_ligand_word(self.cmd, obj, bondAtoms)
-            
-            if((key != None) and (selectStatement != None)):
-                # Now check to see if this word is already selected and deselect it if so.
-                if(key in self.word_list):
-                    # Remove the motif from the selection
-                    del self.word_list[key]
-                else:
-                    self.word_list[key] = selectStatement
-
-        # TODO Waters are typically represented by single oxygen atoms in pdbs,
-        # so if we want to allow for searches with water, we can't only look
-        # at bonds.  So we would use an else statement below, and check
-        # the atom selected to see if it's water, and if so, allow the selection.
-            
+        else: # User selected an atom rather than a bond.
+            singleAtom = self.get_atom('pk1')
+            (key, selectStatement) = suns_aa_motifs.find_suns_atom(obj, singleAtom)
+     
+        # Now select the atom(s) the user indicated.
+        print key
+        print selectStatement
+        if((key != None) and (selectStatement != None)):
+            # Now check to see if this word is already selected and deselect it if so.
+            if(key in self.word_list):
+                # Remove the motif from the selection
+                del self.word_list[key]
+            else:
+                self.word_list[key] = selectStatement
                         
         self.cmd.unpick()
         self.do_select(SELECTION_NAME, ' or '.join(self.word_list.values()).strip())

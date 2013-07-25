@@ -2,9 +2,24 @@ WORDS_DICT = {'lys_linker': {'LYS': 'CA+CB+CB+CG+CD+CG+CA+CB+CB+CG+CD+CG'}, 'ser
 
 BOND_WORD_DICT = {('PRO', 'CB', 'CG'): 'proline', ('ILE', 'C', 'O'): 'peptide_bond', ('TRP', 'CE2', 'NE1'): 'indole', ('ARG', 'CZ', 'NH1'): 'guanidinium', ('LYS', 'C', 'CA'): 'peptide_bond', ('TPO', 'O2P', 'P'): 'phospho_thr', ('GLY', 'CA', 'N'): 'peptide_bond', ('ARG', 'CZ', 'NE'): 'guanidinium', ('ARG', 'C', 'CA'): 'peptide_bond', ('PTR', 'OG1', 'P'): 'phospho_tyr', ('SEP', 'OG1', 'P'): 'phospho_ser', ('TYR', 'CA', 'N'): 'peptide_bond', ('TYR', 'CD2', 'CG'): 'phenyl', ('VAL', 'C', 'CA'): 'peptide_bond', ('SEP', 'O2P', 'P'): 'phospho_ser', ('TPO', 'O1P', 'O3P'): 'phospho_thr', ('GLY', 'C', 'CA'): 'peptide_bond', ('GLU', 'CD', 'CG'): 'glu_linker', ('TRP', 'CD1', 'NE1'): 'indole', ('TRP', 'CD2', 'CE2'): 'indole', ('ASP', 'C', 'CA'): 'peptide_bond', ('ILE', 'CB', 'CG1'): 'isoleucine', ('ASN', 'C', 'CA'): 'peptide_bond', ('MET', 'CB', 'CG'): 'met_linker', ('HIP', 'O2P', 'P'): 'phospho_his', ('PHE', 'CE1', 'CZ'): 'phenyl', ('PRO', 'C', 'CA'): 'peptide_bond', ('PHE', 'CE2', 'CZ'): 'phenyl', ('TYR', 'CA', 'CB'): 'tyr_linker', ('PHE', 'C', 'O'): 'peptide_bond', ('GLN', 'CD', 'NE2'): 'carboxamide', ('HIS', 'CG', 'ND1'): 'imidazole', ('SEP', 'O1P', 'P'): 'phospho_ser', ('PHE', 'CD1', 'CE1'): 'phenyl', ('PTR', 'O1P', 'O3P'): 'phospho_tyr', ('SEP', 'OG', 'P'): 'phospho_ser', ('ALA', 'CA', 'N'): 'peptide_bond', ('LEU', 'C', 'CA'): 'peptide_bond', ('THR', 'CB', 'OG1'): 'hydroxyl', ('ASP', 'CG', 'OD1'): 'carboxyl', ('PHD', 'O3P', 'P'): 'phospho_asp', ('LYS', 'CA', 'CB'): 'lys_linker', ('MET', 'C', 'O'): 'peptide_bond', ('TRP', 'CD2', 'CG'): 'indole', ('HIS', 'CB', 'CG'): 'his_linker', ('MET', 'CG', 'SD'): 'met_end', ('ARG', 'C', 'O'): 'peptide_bond', ('TPO', 'OG1', 'P'): 'phospho_thr', ('TRP', 'CA', 'CB'): 'trp_linker', ('ARG', 'CB', 'CG'): 'arg_linker', ('PTR', 'O3P', 'P'): 'phospho_tyr', ('LEU', 'CD1', 'CG'): 'leucine', ('SEP', 'O3P', 'P'): 'phospho_ser', ('MET', 'CA', 'CB'): 'met_linker', ('TYR', 'CD1', 'CE1'): 'phenyl', ('ALA', 'CA', 'CB'): 'alanine', ('GLU', 'CD', 'OE1'): 'carboxyl', ('PHE', 'CD1', 'CG'): 'phenyl', ('THR', 'CA', 'N'): 'peptide_bond', ('TYR', 'CZ', 'OH'): 'hydroxyl', ('ASP', 'CA', 'CB'): 'asp_linker', ('THR', 'CA', 'CB'): 'thr_linker', ('TRP', 'CA', 'N'): 'peptide_bond', ('SER', 'C', 'CA'): 'peptide_bond', ('ASP', 'CA', 'N'): 'peptide_bond', ('MET', 'CA', 'N'): 'peptide_bond', ('TRP', 'CH2', 'CZ2'): 'indole', ('HIP', 'OG1', 'P'): 'phospho_his', ('HIP', 'OG', 'P'): 'phospho_his', ('ILE', 'CA', 'CB'): 'isoleucine', ('LYS', 'CD', 'CG'): 'lys_linker', ('PRO', 'CD', 'CG'): 'proline', ('GLU', 'C', 'O'): 'peptide_bond', ('TRP', 'CH2', 'CZ3'): 'indole', ('TPO', 'O1P', 'P'): 'phospho_thr', ('ILE', 'CA', 'N'): 'peptide_bond', ('CYS', 'C', 'CA'): 'peptide_bond', ('LYS', 'CD', 'CE'): 'lys_end', ('GLY', 'C', 'O'): 'peptide_bond', ('CYS', 'CA', 'CB'): 'cysteine', ('MET', 'C', 'CA'): 'peptide_bond', ('VAL', 'CA', 'N'): 'peptide_bond', ('THR', 'CB', 'CG2'): 'thr_linker', ('LEU', 'CA', 'CB'): 'leucine', ('ASP', 'C', 'O'): 'peptide_bond', ('LEU', 'CB', 'CG'): 'leucine', ('PRO', 'C', 'O'): 'peptide_bond', ('PHD', 'O1P', 'P'): 'phospho_asp', ('PHE', 'C', 'CA'): 'peptide_bond', ('ARG', 'CZ', 'NH2'): 'guanidinium', ('TYR', 'CB', 'CG'): 'tyr_linker', ('TYR', 'CE1', 'CZ'): 'phenyl', ('TYR', 'CE2', 'CZ'): 'phenyl', ('VAL', 'CB', 'CG2'): 'valine', ('LEU', 'C', 'O'): 'peptide_bond', ('LEU', 'CA', 'N'): 'peptide_bond', ('VAL', 'CA', 'CB'): 'valine', ('GLU', 'CA', 'N'): 'peptide_bond', ('PHD', 'OG1', 'P'): 'phospho_asp', ('LYS', 'C', 'O'): 'peptide_bond', ('SER', 'C', 'O'): 'peptide_bond', ('PTR', 'O2P', 'P'): 'phospho_tyr', ('GLU', 'CA', 'CB'): 'glu_linker', ('GLU', 'CB', 'CG'): 'glu_linker', ('GLN', 'CA', 'N'): 'peptide_bond', ('PHE', 'CD2', 'CG'): 'phenyl', ('TYR', 'C', 'CA'): 'peptide_bond', ('HIS', 'CA', 'CB'): 'his_linker', ('PTR', 'O1P', 'P'): 'phospho_tyr', ('TRP', 'CE2', 'CZ2'): 'indole', ('ASN', 'CG', 'OD1'): 'carboxamide', ('HIS', 'CA', 'N'): 'peptide_bond', ('ILE', 'CB', 'CG2'): 'isoleucine', ('HIS', 'CD2', 'NE2'): 'imidazole', ('TRP', 'CD2', 'CE3'): 'indole', ('ALA', 'C', 'CA'): 'peptide_bond', ('LEU', 'CD2', 'CG'): 'leucine', ('TRP', 'C', 'CA'): 'peptide_bond', ('GLN', 'CA', 'CB'): 'gln_linker', ('GLN', 'CB', 'CG'): 'gln_linker', ('HIP', 'O3P', 'P'): 'phospho_his', ('THR', 'C', 'O'): 'peptide_bond', ('HIS', 'C', 'O'): 'peptide_bond', ('TRP', 'CD1', 'CG'): 'indole', ('ILE', 'C', 'CA'): 'peptide_bond', ('SER', 'CA', 'N'): 'peptide_bond', ('GLU', 'C', 'CA'): 'peptide_bond', ('GLN', 'C', 'CA'): 'peptide_bond', ('SEP', 'O1P', 'O3P'): 'phospho_ser', ('CYS', 'C', 'O'): 'peptide_bond', ('SER', 'CB', 'OG'): 'hydroxyl', ('HIS', 'CE1', 'NE2'): 'imidazole', ('PHE', 'CA', 'N'): 'peptide_bond', ('HIP', 'O1P', 'P'): 'phospho_his', ('ASP', 'CG', 'OD2'): 'carboxyl', ('ASN', 'CB', 'CG'): 'asn_linker', ('LYS', 'CE', 'NZ'): 'lys_end', ('CYS', 'CB', 'SG'): 'cysteine', ('VAL', 'CB', 'CG1'): 'valine', ('TYR', 'C', 'O'): 'peptide_bond', ('TPO', 'OG', 'P'): 'phospho_thr', ('VAL', 'C', 'O'): 'peptide_bond', ('HIP', 'O1P', 'O3P'): 'phospho_his', ('ARG', 'CD', 'NE'): 'guanidinium', ('ALA', 'C', 'O'): 'peptide_bond', ('LYS', 'CB', 'CG'): 'lys_linker', ('GLU', 'CD', 'OE2'): 'carboxyl', ('TPO', 'O3P', 'P'): 'phospho_thr', ('PHD', 'O2P', 'P'): 'phospho_asp', ('PHE', 'CA', 'CB'): 'phe_linker', ('ASN', 'CG', 'ND2'): 'carboxamide', ('HIS', 'CD2', 'CG'): 'imidazole', ('PHE', 'CD2', 'CE2'): 'phenyl', ('PRO', 'CA', 'N'): 'peptide_bond', ('ASN', 'C', 'O'): 'peptide_bond', ('ARG', 'CD', 'CG'): 'arg_linker', ('ARG', 'CA', 'N'): 'peptide_bond', ('TRP', 'CB', 'CG'): 'trp_linker', ('PHE', 'CB', 'CG'): 'phe_linker', ('HIS', 'C', 'CA'): 'peptide_bond', ('PHD', 'OG', 'P'): 'phospho_asp', ('MET', 'CE', 'SD'): 'met_end', ('GLN', 'C', 'O'): 'peptide_bond', ('HIS', 'CE1', 'ND1'): 'imidazole', ('CYS', 'CA', 'N'): 'peptide_bond', ('TRP', 'CE3', 'CZ3'): 'indole', ('TYR', 'CD2', 'CE2'): 'phenyl', ('ILE', 'CD1', 'CG1'): 'isoleucine', ('PTR', 'OG', 'P'): 'phospho_tyr', ('TRP', 'C', 'O'): 'peptide_bond', ('LYS', 'CA', 'N'): 'peptide_bond', ('TYR', 'CD1', 'CG'): 'phenyl', ('GLN', 'CD', 'CG'): 'gln_linker', ('ARG', 'CA', 'CB'): 'arg_linker', ('ASN', 'CA', 'N'): 'peptide_bond', ('SER', 'CA', 'CB'): 'ser_linker', ('GLN', 'CD', 'OE1'): 'carboxamide', ('PHD', 'O1P', 'O3P'): 'phospho_asp', ('THR', 'C', 'CA'): 'peptide_bond', ('ASN', 'CA', 'CB'): 'asn_linker', ('ASP', 'CB', 'CG'): 'asp_linker'}
 
-def find_aa_word(obj, bondAtoms):
-    key = None
+ATOMS_DICT = {('MG', 'MG'): 'mg', ('HOH', 'O'): 'water'}
+
+def get_key(obj, atom, word):
+    key = (obj, atom['model'], atom['segi'], atom['chain'], atom['resn'], atom['resi'], word)
+    
+    return key
+    
+def get_selection_statement(atom, key, atomNames):
     selectionStatement = None
+    if(atom['segi'].strip() == ''):
+        selectionStatement = '(object %s and model %s and chain %s and resn %s and resi %s and name %s )' % tuple(list(key[0:2]) + list(key[3:6]) + [atomNames])
+    else:
+        selectionStatement = '(object %s and model %s and segi %s and chain %s and resn %s and resi %s and name %s )' % tuple(list(key[0:6]) + [atomNames])
+        
+    return selectionStatement
+
+def find_aa_word(obj, bondAtoms):
+    (key, selectionStatement) = (None, None)
     
     # The bond key is of the form (resn, atom0, atom1) where the atom
     # names are in alphabetical order.
@@ -15,10 +30,17 @@ def find_aa_word(obj, bondAtoms):
     if(bond_key in BOND_WORD_DICT):
         word = BOND_WORD_DICT[bond_key]
         # Now form a new key that has the current residue and the word.
-        key = (obj, bondAtoms[0]['model'], bondAtoms[0]['segi'], bondAtoms[0]['chain'], bondAtoms[0]['resn'], bondAtoms[0]['resi'], word)
-        if(bondAtoms[0]['segi'].strip() == ''):
-            selectionStatement = '(object %s and model %s and chain %s and resn %s and resi %s and name %s )' % tuple(list(key[0:2]) + list(key[3:6]) + [WORDS_DICT[word][key[4]]])
-        else:
-            selectionStatement = '(object %s and model %s and segi %s and chain %s and resn %s and resi %s and name %s )' % tuple(list(key[0:6]) + [WORDS_DICT[word][key[4]]])
+        key = get_key(obj, bondAtoms[0], word)
+        selectionStatement = get_selection_statement(bondAtoms[0], key, WORDS_DICT[word][key[4]])
             
+    return (key, selectionStatement)
+
+def find_suns_atom(obj, selectedAtom):
+    (key, selectionStatement) = (None, None)
+
+    atom_key = (selectedAtom['resn'], selectedAtom['name'])
+    if(atom_key in ATOMS_DICT):
+        key = get_key(obj, selectedAtom, ATOMS_DICT[atom_key])
+        selectionStatement = get_selection_statement(selectedAtom, key, atom_key[1])
+    
     return (key, selectionStatement)

@@ -737,17 +737,8 @@ class Suns_search(Wizard):
                 return
             
             (key, selectStatement) = suns_aa_motifs.find_aa_word(obj, bondAtoms)
-            # If not part of one of our amino acid words, check to see if we have ligand info about it.
-            if((key == None) or (selectStatement == None)):
-                import suns_ligand
-                (selectStatement, key) = suns_ligand.find_ligand_word(self.cmd, obj, bondAtoms)
-        else: # User selected an atom rather than a bond.
-            singleAtom = self.get_atom('pk1')
-            (key, selectStatement) = suns_aa_motifs.find_suns_atom(obj, singleAtom)
      
         # Now select the atom(s) the user indicated.
-        print key
-        print selectStatement
         if((key != None) and (selectStatement != None)):
             # Now check to see if this word is already selected and deselect it if so.
             if(key in self.word_list):

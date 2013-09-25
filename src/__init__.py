@@ -18,6 +18,7 @@ import socket
 import tkSimpleDialog
 import tkMessageBox
 import sys
+import pymol
 from Tkinter import *
 
 # The following two dictionaries are automatically generated from the motif
@@ -396,6 +397,14 @@ class Suns_search(Wizard):
         self.cmd.set('auto_hide_selections',0)
         self.prev_auto_zoom_setting = self.cmd.get('auto_zoom')
         self.cmd.set('auto_zoom', 0)
+        
+        # There are a few functions which would like to use a Tcl window
+        # to communicate with the user.  This can cause some unsafe threading
+        # issues with the global PyMol Tcl window.  Thus, we will instead
+        # store the function calls in the pymol module itself, and when 
+        # the time comes, just ask the PyMol module to execute it for us.
+        pymol.stored.aacycler = lambda: AACycler(self.app, self.cmd)
+        pymol.stored.fetch_full_context = lambda: self.fetch_full_context()
     
     def cleanup(self):
         '''
@@ -547,7 +556,8 @@ class Suns_search(Wizard):
             [ 2, 'Clear Results', 'cmd.get_wizard().delete_results()'],
             [ 2, 'Clear Selection','cmd.get_wizard().clear_selection()'],
             [ 2, 'Clear Saved', 'cmd.get_wizard().delete_saved()'],
-            [ 2, 'Fetch Full Contexts','cmd.get_wizard().fetch_full_context()'],
+            #[ 2, 'Fetch Full Contexts','cmd.get_wizard().fetch_full_context()'],
+            [ 2, 'Fetch Full Contexts','pymol._ext_gui.execute("import pymol; pymol.stored.aacycler()")'],
             [ 2, 'Clear Contexts','cmd.get_wizard().delete_full()'],
             [ 2, 'Cycle Amino Acids','cmd.get_wizard().cycle_amino_acids()'],
             [ 2, 'Done','cmd.set_wizard()'] ]
@@ -565,13 +575,13 @@ class Suns_search(Wizard):
             return (len(words) == 3) and (words[2] == RESULT_SUFFIX)
         
         matches = filter(match, objs)
-        #if(len(matches) > 1):
-        #    # Fetching pdbs can take a while, so ask the user if he/she really
-        #    # wants to fetch a number of contexts.
-        #    if(not tkMessageBox.askyesno(
-        #        "Multiple Results Selected",
-        #        "Fetching multiple contexts takes time and will block PyMOL until finished.  Proceed?")):
-        #        return;
+        if(len(matches) > 1):
+            # Fetching pdbs can take a while, so ask the user if he/she really
+            # wants to fetch a number of contexts.
+            if(not tkMessageBox.askyesno(
+                "Multiple Results Selected",
+                "Fetching multiple contexts takes time and will block PyMOL until finished.  Proceed?")):
+                return;
         
         # Loop over all objects that are enabled and have the Result suffix.
         for obj in matches:
@@ -627,7 +637,13 @@ class Suns_search(Wizard):
     def cycle_amino_acids(self):
         '''This method will create a gui which allows the user to cycle through
            various amino acids from the search results.'''
-        brett = AACycler(self.app, self.cmd)
+        # If we just create the AACycler here, there can be a conflict
+        # with creating the TopLevel gui object.  I think it has something
+        # to do with a threading issue and the other Tcl thread that is involved
+        # with the PyMol GUI.  So instead, we tell PyMol about the AACycler
+        # function call, and then ask the main PyMol GUI to execute that object.
+        import pymol
+        pymol._ext_gui.execute('import pymol; pymol.stored.aacycler()')
     
     def launch_search(self):
         pdbstr = self.cmd.get_pdbstr(SELECTION_NAME)

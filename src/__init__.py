@@ -556,10 +556,9 @@ class Suns_search(Wizard):
             [ 2, 'Clear Results', 'cmd.get_wizard().delete_results()'],
             [ 2, 'Clear Selection','cmd.get_wizard().clear_selection()'],
             [ 2, 'Clear Saved', 'cmd.get_wizard().delete_saved()'],
-            #[ 2, 'Fetch Full Contexts','cmd.get_wizard().fetch_full_context()'],
-            [ 2, 'Fetch Full Contexts','pymol._ext_gui.execute("import pymol; pymol.stored.aacycler()")'],
+            [ 2, 'Fetch Full Contexts','import pymol; pymol._ext_gui.execute("import pymol; pymol.stored.fetch_full_context()")'],
             [ 2, 'Clear Contexts','cmd.get_wizard().delete_full()'],
-            [ 2, 'Cycle Amino Acids','cmd.get_wizard().cycle_amino_acids()'],
+            [ 2, 'Cycle Amino Acids','import pymol; pymol._ext_gui.execute("import pymol; pymol.stored.aacycler()")'],
             [ 2, 'Done','cmd.set_wizard()'] ]
     
     def fetch_full_context(self):
@@ -633,17 +632,6 @@ class Suns_search(Wizard):
     
     def delete_full(self):
         self.cmd.delete('*_' + CONTEXT_SUFFIX)
-    
-    def cycle_amino_acids(self):
-        '''This method will create a gui which allows the user to cycle through
-           various amino acids from the search results.'''
-        # If we just create the AACycler here, there can be a conflict
-        # with creating the TopLevel gui object.  I think it has something
-        # to do with a threading issue and the other Tcl thread that is involved
-        # with the PyMol GUI.  So instead, we tell PyMol about the AACycler
-        # function call, and then ask the main PyMol GUI to execute that object.
-        import pymol
-        pymol._ext_gui.execute('import pymol; pymol.stored.aacycler()')
     
     def launch_search(self):
         pdbstr = self.cmd.get_pdbstr(SELECTION_NAME)

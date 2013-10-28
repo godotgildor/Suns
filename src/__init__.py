@@ -676,7 +676,7 @@ class Suns_search(Wizard):
         
         return False
     
-    def move_result_to_saved(obj):
+    def move_result_to_saved(self, obj):
         '''
         This method will move the suns result object to a suns saved object.
         '''

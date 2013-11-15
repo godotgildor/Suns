@@ -12,7 +12,7 @@ ZIP_FILE := suns.zip
 
 PLUGIN_INIT   := $(SRC_DIR)/__init__.py
 PLUGIN_MOTIFS := $(SRC_DIR)/suns_aa_motifs.py
-PLUGIN_PATH   := usr/lib/python2.7/dist-packages/pmg_tk/startup/suns
+PLUGIN_PATH   := usr/lib/python2.7/dist-packages/pmg_tk/startup
 
 DEB_DIR := debian
 DEB_BUILD_DIR := $(DEB_DIR)/build
@@ -32,7 +32,7 @@ $(BUILD_DIR)/$(DEB_FULL): \
 	 $(DEB_BUILD_DIR)/DEBIAN \
 	 $(DEB_BUILD_DIR)/$(PLUGIN_PATH) \
 	 $(DEB_BUILD_DIR)/$(DOC_PATH)
-	cp $(PLUGIN_INIT) $(DEB_BUILD_DIR)/$(PLUGIN_PATH)
+	cp $(PLUGIN_INIT) $(DEB_BUILD_DIR)/$(PLUGIN_PATH)/suns-search.py
 	cp $(PLUGIN_MOTIFS) $(DEB_BUILD_DIR)/$(PLUGIN_PATH)
 	cp $(DEB_DIR)/copyright $(DEB_BUILD_DIR)/$(DOC_PATH)/copyright
 	cp $(DEB_DIR)/control $(DEB_BUILD_DIR)/DEBIAN/control

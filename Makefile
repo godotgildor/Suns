@@ -28,22 +28,22 @@ $(BUILD_DIR)/$(DEB_FULL): \
     $(DEB_DIR)/control \
     $(PLUGIN_INIT) \
     $(PLUGIN_MOTIFS)
-        mkdir -p $(BUILD_DIR) \
-         $(DEB_BUILD_DIR)/DEBIAN \
-         $(DEB_BUILD_DIR)/$(PLUGIN_PATH) \
-         $(DEB_BUILD_DIR)/$(DOC_PATH)
-        cp $(PLUGIN_INIT) $(DEB_BUILD_DIR)/$(PLUGIN_PATH)
-        cp $(PLUGIN_INIT) $(DEB_BUILD_DIR)/$(PLUGIN_PATH)
-        cp $(DEB_DIR)/copyright $(DEB_BUILD_DIR)/$(DOC_PATH)/copyright
-        cp $(DEB_DIR)/control $(DEB_BUILD_DIR)/DEBIAN/control
-        gzip -9 -c $(DEB_DIR)/changelog > $(BUILD_DIR)/changelog.gz
-        chmod 644 $(BUILD_DIR)/changelog.gz
-        cp $(BUILD_DIR)/changelog.gz $(DEB_BUILD_DIR)/$(DOC_PATH)
-        rm $(BUILD_DIR)/changelog.gz
-        ln -fs $(DOC_PATH)/changelog.gz \
-              $(DEB_BUILD_DIR)/$(DOC_PATH)/changelog.Debian.gz
-        find $(DEB_BUILD_DIR) -type d | xargs chmod 755
-        fakeroot dpkg-deb --build $(DEB_BUILD_DIR) $(BUILD_DIR)/$(DEB_FULL)
+	mkdir -p $(BUILD_DIR) \
+	 $(DEB_BUILD_DIR)/DEBIAN \
+	 $(DEB_BUILD_DIR)/$(PLUGIN_PATH) \
+	 $(DEB_BUILD_DIR)/$(DOC_PATH)
+	cp $(PLUGIN_INIT) $(DEB_BUILD_DIR)/$(PLUGIN_PATH)
+	cp $(PLUGIN_INIT) $(DEB_BUILD_DIR)/$(PLUGIN_PATH)
+	cp $(DEB_DIR)/copyright $(DEB_BUILD_DIR)/$(DOC_PATH)/copyright
+	cp $(DEB_DIR)/control $(DEB_BUILD_DIR)/DEBIAN/control
+	gzip -9 -c $(DEB_DIR)/changelog > $(BUILD_DIR)/changelog.gz
+	chmod 644 $(BUILD_DIR)/changelog.gz
+	cp $(BUILD_DIR)/changelog.gz $(DEB_BUILD_DIR)/$(DOC_PATH)
+	rm $(BUILD_DIR)/changelog.gz
+	ln -fs $(DOC_PATH)/changelog.gz \
+	      $(DEB_BUILD_DIR)/$(DOC_PATH)/changelog.Debian.gz
+	find $(DEB_BUILD_DIR) -type d | xargs chmod 755
+	fakeroot dpkg-deb --build $(DEB_BUILD_DIR) $(BUILD_DIR)/$(DEB_FULL)
 
 zipfile: $(INSTALL_DIR)/$(ZIP_FILE)
 .PHONY: zipfile

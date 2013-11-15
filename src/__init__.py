@@ -769,7 +769,12 @@ cmd.extend('suns_search', suns_search)
 # trick to get "wizard suns_search" working
 sys.modules['pymol.wizard.suns_search'] = sys.modules[__name__]
 
-# add item to plugin menu
-def __init_plugin__(self):
+try:
     from pymol.plugins import addmenuitem
-    addmenuitem('Suns Search', lambda s=self : suns_search(s))
+
+    # add item to plugin menu
+    def __init_plugin__(self):
+        addmenuitem('Suns Search', lambda s=self : suns_search(s))
+except:
+    def __init__(self):
+        self.menuBar.addmenuitem('Plugin', 'command', 'Suns search', label = 'Suns search', command = lambda s=self : suns_search(s))

@@ -33,7 +33,7 @@ $(BUILD_DIR)/$(DEB_FULL): \
 	 $(DEB_BUILD_DIR)/$(PLUGIN_PATH) \
 	 $(DEB_BUILD_DIR)/$(DOC_PATH)
 	cp $(PLUGIN_INIT) $(DEB_BUILD_DIR)/$(PLUGIN_PATH)
-	cp $(PLUGIN_INIT) $(DEB_BUILD_DIR)/$(PLUGIN_PATH)
+	cp $(PLUGIN_MOTIFS) $(DEB_BUILD_DIR)/$(PLUGIN_PATH)
 	cp $(DEB_DIR)/copyright $(DEB_BUILD_DIR)/$(DOC_PATH)/copyright
 	cp $(DEB_DIR)/control $(DEB_BUILD_DIR)/DEBIAN/control
 	gzip -9 -c $(DEB_DIR)/changelog > $(BUILD_DIR)/changelog.gz

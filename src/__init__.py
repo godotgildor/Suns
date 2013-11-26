@@ -405,6 +405,7 @@ class Suns_search(Wizard):
         # the time comes, just ask the PyMol module to execute it for us.
         pymol.stored.aacycler = lambda: AACycler(self.app, self.cmd)
         pymol.stored.fetch_full_context = lambda: self.fetch_full_context()
+        pymol.stored.ask_group_name = lambda: self.ask_group_name()
     
     def cleanup(self):
         '''
@@ -552,7 +553,7 @@ class Suns_search(Wizard):
             [ 3, 'Cap: ' + str(self.number_of_structures) + ' results', 'num_structures'],
             [ 3, 'Order: ' + {True: 'Random (Seed = %d' % self.random_seed + ')', False: 'Default'}[self.random_seed != 0], 'random_seed'],
             [ 3, 'Server: ' + self.suns_server_address, 'server'],
-            [ 2, 'Group name: ' + self.group_name, 'cmd.get_wizard().ask_group_name()'],
+            [ 2, 'Group name: ' + self.group_name, 'import pymol; pymol._ext_gui.execute("import pymol; pymol.stored.ask_group_name()")'],
             [ 2, 'Clear Results', 'cmd.get_wizard().delete_results()'],
             [ 2, 'Clear Selection','cmd.get_wizard().clear_selection()'],
             [ 2, 'Clear Saved', 'cmd.get_wizard().delete_saved()'],

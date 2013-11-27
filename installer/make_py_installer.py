@@ -7,7 +7,7 @@ import zipfile
 import tempfile
 
 class SunsInstaller:
-    def __init__(self):
+    def __init__(self, app):
         dir = os.path.dirname(os.path.abspath(__file__))
         tmpZip = tempfile.NamedTemporaryFile(delete=False)
         tmpZip.write(base64.b64decode(CODE))

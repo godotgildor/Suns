@@ -9,6 +9,7 @@ BUILD_DIR := build
 
 ZIP_DIR := suns
 ZIP_FILE := suns.zip
+PY_INSTALLER := suns_installer.py
 
 PLUGIN_INIT   := $(SRC_DIR)/__init__.py
 PLUGIN_MOTIFS := $(SRC_DIR)/suns_aa_motifs.py
@@ -48,10 +49,16 @@ $(BUILD_DIR)/$(DEB_FULL): \
 zipfile: $(INSTALL_DIR)/$(ZIP_FILE)
 .PHONY: zipfile
 
+pyinstaller: $(INSTALL_DIR)/$(PY_INSTALLER)
+.PHONY: pyinstaller
+
 $(INSTALL_DIR)/$(ZIP_FILE): $(SRC_DIR)/__init__.py $(SRC_DIR)/pika
 	ln -s src suns
 	zip -r $(INSTALL_DIR)/$(ZIP_FILE) suns
 	rm suns
+
+$(INSTALL_DIR)/$(PY_INSTALLER): $(SRC_DIR)/__init__.py $(SRC_DIR)/pika $(INSTALL_DIR)/$(ZIP_FILE) $(INSTALL_DIR)/make_py_installer.py
+	python $(INSTALL_DIR)/make_py_installer.py $(INSTALL_DIR)/$(ZIP_FILE) $(INSTALL_DIR)/$(PY_INSTALLER)
 
 .PHONY: suns_aa_motifs
 suns_aa_motifs: 

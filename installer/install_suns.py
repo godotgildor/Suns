@@ -134,12 +134,16 @@ class SearchThread(threading.Thread):
         
         credentials = PlainCredentials('suns-client', 'suns-client')
         try:
-            # Connection initialization
-            connection = BlockingConnection(
-                ConnectionParameters(
-                    host = self.suns_server_address,
-                    credentials = credentials,
-                    virtual_host = 'suns-vhost'))
+            def connect(port):
+                return BlockingConnection(
+                    ConnectionParameters(host=self.suns_server_address,
+                                         port=port,
+                                         credentials=credentials,
+                                         virtual_host='suns-vhost'))
+            try:
+                connect(5672)
+            except:
+                connect(80)
             try:
                 # Channel Initialization
                 self.channel = connection.channel()

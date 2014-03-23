@@ -410,6 +410,7 @@ class Suns_search(Wizard):
         pymol.stored.aacycler = lambda: AACycler(self.app, self.cmd)
         pymol.stored.fetch_full_context = lambda: self.fetch_full_context()
         pymol.stored.ask_group_name = lambda: self.ask_group_name()
+        pymol.stored.ask_server_address = lambda: self.ask_server_address()
     
     def cleanup(self):
         '''
@@ -509,7 +510,7 @@ class Suns_search(Wizard):
         server_address_menu.append(
             [1, 'Default: ' + SUNS_SERVER_ADDRESS, 'cmd.get_wizard().set_server_address("' + SUNS_SERVER_ADDRESS + '")'])
         server_address_menu.append(
-            [1, 'User defined', 'cmd.get_wizard().ask_server_address()'])
+            [1, 'User defined', 'import pymol; pymol._ext_gui.execute("import pymol; pymol.stored.ask_server_address()")'])
         return server_address_menu
         
     def set_server_address(self, server_address):

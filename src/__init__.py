@@ -161,9 +161,9 @@ class SearchThread(threading.Thread):
                                          credentials=credentials,
                                          virtual_host='suns-vhost'))
             try:
-                connect(5672)
+                connection = connect(5672)
             except:
-                connect(80)
+                connection = connect(80)
             try:
                 # Channel Initialization
                 self.channel = connection.channel()

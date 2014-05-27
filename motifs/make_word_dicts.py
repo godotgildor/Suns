@@ -43,6 +43,9 @@ def find_suns_atom(obj, selectedAtom):
         selectionStatement = get_selection_statement(selectedAtom, key, atom_key[1])
     
     return (key, selectionStatement)
+
+def __init_plugin__(self):
+    pass
 '''
 
 ################################################################################
